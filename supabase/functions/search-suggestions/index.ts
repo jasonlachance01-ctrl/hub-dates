@@ -24,12 +24,17 @@ serve(async (req) => {
     const searchEngineId = Deno.env.get('GOOGLE_SEARCH_ENGINE_ID');
 
     if (!apiKey || !searchEngineId) {
-      console.error('Missing API credentials');
-      return new Response(JSON.stringify({ error: 'Missing API credentials' }), {
+      console.error('Missing API credentials', { hasApiKey: !!apiKey, hasSearchEngineId: !!searchEngineId });
+      return new Response(JSON.stringify({ 
+        error: 'Missing API credentials',
+        details: 'Please ensure both GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID are configured'
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Using Search Engine ID:', searchEngineId.substring(0, 5) + '...');
 
     const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
 
