@@ -43,301 +43,118 @@ serve(async (req) => {
     // Fetch dates for each event
     for (const event of events) {
       try {
-        // Form Google Search query first
-        const query = `When is ${event.name} for ${organizationName}`;
-        
-        // First, try to scrape Google's AI Overview by fetching the search page directly
-        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-        
-        console.log('Fetching Google Search page for AI Overview:', query);
-        
-        let aiOverview = '';
-        try {
-          const searchPageResponse = await fetch(googleSearchUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-          });
-          const searchPageHtml = await searchPageResponse.text();
-          
-          // Look for AI Overview content - it's typically in a specific div
-          // AI Overview usually appears in elements with data-attrid or specific classes
-          const aiOverviewMatch = searchPageHtml.match(/<div[^>]*data-attrid="SGFQTitle"[^>]*>[\s\S]*?<\/div>/i) ||
-                                  searchPageHtml.match(/<div[^>]*class="[^"]*kp-blk[^"]*"[^>]*>[\s\S]*?<\/div>/i);
-          
-          if (aiOverviewMatch) {
-            aiOverview = aiOverviewMatch[0]
-              .replace(/<[^>]+>/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim()
-              .slice(0, 1000);
-            console.log('Found AI Overview snippet for', event.name);
-          }
-        } catch (error) {
-          console.log('Could not fetch AI Overview, continuing with regular search:', error);
-        }
+        // Simple, direct query - exactly how a user would ask
+        const query = `What date is ${event.name} for ${organizationName}`;
+        console.log('Query:', query);
 
-        // If we found AI Overview content, try to extract date from it first
-        if (aiOverview && aiOverview.length > 20) {
-          console.log('Using AI Overview content for', event.name);
-          
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [
-                {
-                  role: 'system',
-                  content: `Extract the date from Google's AI Overview. Return ONLY the date in "Month Day, Year" format. If no date found, return "Date not found".`
-                },
-                {
-                  role: 'user',
-                  content: `Event: ${event.name}\nOrganization: ${organizationName}\n\nGoogle AI Overview:\n${aiOverview}\n\nWhat is the date?`
-                }
-              ],
-              tools: [
-                {
-                  type: "function",
-                  function: {
-                    name: "extract_date",
-                    description: "Extract the event date",
-                    parameters: {
-                      type: "object",
-                      properties: {
-                        date: { type: "string" }
-                      },
-                      required: ["date"]
-                    }
-                  }
-                }
-              ],
-              tool_choice: { type: "function", function: { name: "extract_date" } }
-            }),
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-            const dateStr = toolCall ? JSON.parse(toolCall.function.arguments).date : null;
-            
-            if (dateStr && dateStr !== 'Date not found') {
-              eventDates.push({ eventName: event.name, date: dateStr });
-              console.log('Found date from AI Overview for', event.name, ':', dateStr);
-              await new Promise(resolve => setTimeout(resolve, 500));
-              continue; // Skip regular search if we found it
-            }
-          }
-        }
-
-        // If AI Overview didn't work, fall back to regular Custom Search API
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=3`;
-
+        // METHOD 1: Try Google Search API first
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
         const searchResponse = await fetch(searchUrl);
-        const searchData = await searchResponse.json();
-
-        if (!searchResponse.ok) {
-          console.error('Search error for', event.name, ':', searchData);
-          eventDates.push({ eventName: event.name, date: null });
-          continue;
-        }
-
-        // Extract snippets from search results
-        const snippets = searchData.items?.map((item: any) => item.snippet).join('\n') || '';
-
-        // Get the top URLs from search results
-        const topUrls = searchData.items?.slice(0, 2).map((item: any) => item.link) || [];
         
-        if (topUrls.length === 0) {
-          console.log('No URLs found for', event.name);
-          eventDates.push({ eventName: event.name, date: null });
-          continue;
-        }
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          
+          if (searchData.items && searchData.items.length > 0) {
+            // Collect snippets from top 3 results
+            const snippets = searchData.items.slice(0, 3)
+              .map((item: any) => `${item.title}\n${item.snippet}`)
+              .join('\n\n');
+            
+            console.log('Got Google snippets, length:', snippets.length);
 
-        // Fetch and parse the actual web pages
-        let pageContent = '';
-        for (const url of topUrls) {
-          try {
-            console.log('Fetching page:', url);
-            const pageResponse = await fetch(url);
-            const html = await pageResponse.text();
-            
-            // Extract text content from HTML (simple approach)
-            const textContent = html
-              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-              .replace(/<[^>]+>/g, ' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            
-            pageContent += textContent.slice(0, 8000) + '\n\n';
-          } catch (error) {
-            console.error('Error fetching page:', url, error);
+            // Use GPT-5 Mini to extract the date from snippets
+            const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${lovableApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'openai/gpt-5-mini',
+                messages: [
+                  {
+                    role: 'user',
+                    content: `Look at these Google search results and extract the EXACT date for this question: "${query}"
+
+Search Results:
+${snippets}
+
+Return ONLY the date in "Month Day, Year" format (like "May 15, 2025"). If you cannot find a specific date, return "NOT_FOUND".`
+                  }
+                ],
+                temperature: 0,
+                max_completion_tokens: 50
+              }),
+            });
+
+            if (extractResponse.ok) {
+              const extractData = await extractResponse.json();
+              const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
+              
+              console.log('Extracted from Google:', extracted);
+              
+              if (extracted && extracted !== 'NOT_FOUND' && !extracted.includes('NOT_FOUND') && extracted.length < 100) {
+                eventDates.push({ eventName: event.name, date: extracted });
+                console.log('✓ Found via Google for', event.name);
+                await new Promise(resolve => setTimeout(resolve, 600));
+                continue;
+              }
+            }
           }
         }
 
-        console.log(`Extracted ${pageContent.length} characters of content for ${event.name}`);
-
-        if (!pageContent) {
-          console.log('Could not fetch page content for', event.name);
-          eventDates.push({ eventName: event.name, date: null });
-          continue;
-        }
-
-        // Use AI to extract the date from full page content
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        // METHOD 2: If Google didn't work, ask GPT-5 directly
+        console.log('Trying GPT-5 direct answer...');
+        
+        const directResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${lovableApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'openai/gpt-5',
             messages: [
-                {
-                  role: 'system',
-                  content: `You are a date extraction expert for school calendars. Your job is to find dates in web content.
-
-CRITICAL RULES:
-- Look for ANY date-like patterns: "May 15", "5/15/25", "March 10-14", "December 20 - January 3"
-- Look for phrases like "begins", "starts", "ends", "from...to", "through"
-- For date ranges, return the START date
-- Convert all dates to "Month Day, Year" format
-- If you see a year like "24" or "25", assume it means "2024" or "2025"
-- For events like "Spring Break" or "Winter Break", look for mentions of those specific terms followed by dates
-- Be generous - if you see ANY date related to the event, extract it
-- Only return "Date not found" if there are absolutely NO dates in the content`
-                },
-                {
-                  role: 'user',
-                  content: `EVENT TO FIND: ${event.name}
-SCHOOL: ${organizationName}
-
-Look through this web page content and find when ${event.name} occurs. Look for ANY mention of dates near the words "${event.name}".
-
-WEB CONTENT:
-${pageContent.slice(0, 12000)}
-
-What is the date? Be specific and extract it from the content above.`
-                }
-            ],
-            tools: [
               {
-                type: "function",
-                function: {
-                  name: "extract_date",
-                  description: "Extract the event date from search results",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      date: {
-                        type: "string",
-                        description: "The date in format 'Month Day, Year' or 'Date not found'"
-                      }
-                    },
-                    required: ["date"],
-                    additionalProperties: false
-                  }
-                }
+                role: 'user',
+                content: `${query}
+
+Answer with ONLY the date in "Month Day, Year" format. If you do not know the specific date, return "NOT_FOUND".`
               }
             ],
-            tool_choice: { type: "function", function: { name: "extract_date" } }
+            temperature: 0.2,
+            max_completion_tokens: 100
           }),
         });
 
-        if (!aiResponse.ok) {
-          const errorText = await aiResponse.text();
-          console.error('AI error for', event.name, ':', errorText);
-          eventDates.push({ eventName: event.name, date: null });
-          continue;
-        }
-
-        const aiData = await aiResponse.json();
-        const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-        const dateStr = toolCall ? JSON.parse(toolCall.function.arguments).date : null;
-
-        console.log(`AI extraction result for ${event.name}: ${dateStr}`);
-        console.log(`AI response:`, JSON.stringify(aiData.choices?.[0]?.message));
-
-        // If Google Search didn't find a date, try asking GPT-5 directly
-        if (!dateStr || dateStr === 'Date not found') {
-          console.log('Google Search failed, trying GPT-5 directly for', event.name);
-
-          const gptResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${lovableApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'openai/gpt-5',
-              messages: [
-                {
-                  role: 'system',
-                  content: `You are an expert on school calendars and academic schedules. Provide specific dates when asked about school events.
-                  
-Rules:
-- Return dates in "Month Day, Year" format (e.g., "May 15, 2025")
-- For recurring events, provide the most recent or upcoming date
-- If you know typical patterns (e.g., "Spring break is usually mid-March"), provide that
-- If you truly don't know, return "Date not found"
-- Be specific and confident when you do know`
-                },
-                {
-                  role: 'user',
-                  content: `When is ${event.name} for ${organizationName}? Provide the specific date.`
-                }
-              ],
-              tools: [
-                {
-                  type: "function",
-                  function: {
-                    name: "extract_date",
-                    description: "Provide the event date",
-                    parameters: {
-                      type: "object",
-                      properties: {
-                        date: {
-                          type: "string",
-                          description: "The date in format 'Month Day, Year' or 'Date not found'"
-                        }
-                      },
-                      required: ["date"],
-                      additionalProperties: false
-                    }
-                  }
-                }
-              ],
-              tool_choice: { type: "function", function: { name: "extract_date" } }
-            }),
-          });
-
-          if (gptResponse.ok) {
-            const gptData = await gptResponse.json();
-            const gptToolCall = gptData.choices?.[0]?.message?.tool_calls?.[0];
-            const gptDateStr = gptToolCall ? JSON.parse(gptToolCall.function.arguments).date : null;
-            
-            if (gptDateStr && gptDateStr !== 'Date not found') {
-              eventDates.push({ eventName: event.name, date: gptDateStr });
-              console.log('GPT-5 found date for', event.name, ':', gptDateStr);
-            } else {
-              eventDates.push({ eventName: event.name, date: null });
-              console.log('GPT-5 also could not find date for', event.name);
-            }
+        if (directResponse.ok) {
+          const directData = await directResponse.json();
+          const answer = directData.choices?.[0]?.message?.content?.trim() || '';
+          
+          console.log('GPT-5 direct answer:', answer);
+          
+          // Extract date pattern from response
+          const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+          const dateMatch = answer.match(datePattern);
+          
+          if (dateMatch) {
+            eventDates.push({ eventName: event.name, date: dateMatch[0] });
+            console.log('✓ Found via GPT-5 for', event.name, ':', dateMatch[0]);
+          } else if (answer && answer !== 'NOT_FOUND' && !answer.includes('NOT_FOUND') && answer.length < 100) {
+            // Use the answer as-is if it looks like a date
+            eventDates.push({ eventName: event.name, date: answer });
+            console.log('✓ Using GPT-5 answer for', event.name, ':', answer);
           } else {
             eventDates.push({ eventName: event.name, date: null });
-            console.log('GPT-5 request failed for', event.name);
+            console.log('✗ No date found for', event.name);
           }
         } else {
-          eventDates.push({ eventName: event.name, date: dateStr });
-          console.log('Google Search found date for', event.name, ':', dateStr);
+          eventDates.push({ eventName: event.name, date: null });
+          console.log('✗ GPT-5 request failed for', event.name);
         }
 
-        // Add delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Rate limit protection
+        await new Promise(resolve => setTimeout(resolve, 800));
 
       } catch (error) {
         console.error('Error fetching date for', event.name, ':', error);
