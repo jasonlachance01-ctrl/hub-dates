@@ -32,8 +32,8 @@ const Index = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col px-4 pb-6 overflow-hidden">
         <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
-          {organizations.length === 0 ? <div className="flex-1 flex items-center justify-center">
-              <div className="w-full space-y-8">
+          {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-center pt-12">
+              <div className="w-full space-y-8 mb-8">
                 <SearchBar onAdd={handleAddOrganization} />
                 <div className="text-center space-y-3 px-6">
                   <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -50,9 +50,11 @@ const Index = () => {
                   </p>
                 </div>
               </div>
-            </div> : <div className="space-y-4">
+            </div> : <div className="flex flex-col justify-center pt-12 space-y-8">
               <SearchBar onAdd={handleAddOrganization} />
-              <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} />
+              <div className="mt-8">
+                <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} />
+              </div>
             </div>}
         </div>
       </main>
