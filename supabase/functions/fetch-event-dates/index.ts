@@ -43,11 +43,98 @@ serve(async (req) => {
     // Fetch dates for each event
     for (const event of events) {
       try {
-        // Form Google Search query
+        // Form Google Search query first
         const query = `When is ${event.name} for ${organizationName}`;
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=3`;
+        
+        // First, try to scrape Google's AI Overview by fetching the search page directly
+        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        
+        console.log('Fetching Google Search page for AI Overview:', query);
+        
+        let aiOverview = '';
+        try {
+          const searchPageResponse = await fetch(googleSearchUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+          });
+          const searchPageHtml = await searchPageResponse.text();
+          
+          // Look for AI Overview content - it's typically in a specific div
+          // AI Overview usually appears in elements with data-attrid or specific classes
+          const aiOverviewMatch = searchPageHtml.match(/<div[^>]*data-attrid="SGFQTitle"[^>]*>[\s\S]*?<\/div>/i) ||
+                                  searchPageHtml.match(/<div[^>]*class="[^"]*kp-blk[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+          
+          if (aiOverviewMatch) {
+            aiOverview = aiOverviewMatch[0]
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 1000);
+            console.log('Found AI Overview snippet for', event.name);
+          }
+        } catch (error) {
+          console.log('Could not fetch AI Overview, continuing with regular search:', error);
+        }
 
-        console.log('Searching for:', query);
+        // If we found AI Overview content, try to extract date from it first
+        if (aiOverview && aiOverview.length > 20) {
+          console.log('Using AI Overview content for', event.name);
+          
+          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash',
+              messages: [
+                {
+                  role: 'system',
+                  content: `Extract the date from Google's AI Overview. Return ONLY the date in "Month Day, Year" format. If no date found, return "Date not found".`
+                },
+                {
+                  role: 'user',
+                  content: `Event: ${event.name}\nOrganization: ${organizationName}\n\nGoogle AI Overview:\n${aiOverview}\n\nWhat is the date?`
+                }
+              ],
+              tools: [
+                {
+                  type: "function",
+                  function: {
+                    name: "extract_date",
+                    description: "Extract the event date",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        date: { type: "string" }
+                      },
+                      required: ["date"]
+                    }
+                  }
+                }
+              ],
+              tool_choice: { type: "function", function: { name: "extract_date" } }
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+            const dateStr = toolCall ? JSON.parse(toolCall.function.arguments).date : null;
+            
+            if (dateStr && dateStr !== 'Date not found') {
+              eventDates.push({ eventName: event.name, date: dateStr });
+              console.log('Found date from AI Overview for', event.name, ':', dateStr);
+              await new Promise(resolve => setTimeout(resolve, 500));
+              continue; // Skip regular search if we found it
+            }
+          }
+        }
+
+        // If AI Overview didn't work, fall back to regular Custom Search API
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=3`;
 
         const searchResponse = await fetch(searchUrl);
         const searchData = await searchResponse.json();
