@@ -1,20 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
 import { Organization } from "@/types";
+
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [calendarConnected, setCalendarConnected] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState(() => {
+    // Check localStorage to see if calendar was already connected
+    return localStorage.getItem('calendarConnected') === 'true';
+  });
+
   const handleAddOrganization = (org: Organization) => {
     setOrganizations(prev => [...prev, org]);
   };
+
   const handleRemoveOrganization = (id: string) => {
     setOrganizations(prev => prev.filter(org => org.id !== id));
   };
+
   const handleUpdateOrganization = (id: string, updatedOrg: Organization) => {
     setOrganizations(prev => prev.map(org => org.id === id ? updatedOrg : org));
+  };
+
+  const handleAddToCalendarClick = () => {
+    // Only show dialog if calendar not connected yet
+    if (!calendarConnected) {
+      setShowOnboarding(true);
+    }
+  };
+
+  const handleCalendarConnect = () => {
+    setCalendarConnected(true);
+    setShowOnboarding(false);
+    // Save to localStorage so it persists
+    localStorage.setItem('calendarConnected', 'true');
   };
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header Section */}
@@ -67,17 +88,24 @@ const Index = () => {
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
               <SearchBar onAdd={handleAddOrganization} />
               <div className="mt-8">
-                <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} />
+                <OrganizationCarousel 
+                  organizations={organizations} 
+                  onRemove={handleRemoveOrganization} 
+                  onUpdate={handleUpdateOrganization} 
+                  calendarConnected={calendarConnected}
+                  onAddToCalendarClick={handleAddToCalendarClick}
+                />
               </div>
             </div>}
         </div>
       </main>
 
       {/* Onboarding Dialog */}
-      <OnboardingDialog open={showOnboarding && !calendarConnected} onClose={() => setShowOnboarding(false)} onConnect={() => {
-      setCalendarConnected(true);
-      setShowOnboarding(false);
-    }} />
+      <OnboardingDialog 
+        open={showOnboarding} 
+        onClose={() => setShowOnboarding(false)} 
+        onConnect={handleCalendarConnect}
+      />
     </div>;
 };
 export default Index;
