@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Check, Trash2 } from "lucide-react";
 import { Organization } from "@/types";
 import { toast } from "sonner";
+import { useEventMonitoring } from "@/hooks/useEventMonitoring";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +33,7 @@ const OrganizationCard = ({
   onAddToCalendarClick,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { newDates, hasNotifications } = useEventMonitoring(organization.name);
 
   const handleToggleEvent = (eventId: string) => {
     const updatedEvents = organization.events.map((event) =>
@@ -67,7 +70,12 @@ const OrganizationCard = ({
 
   return (
     <>
-      <Card className="h-full flex flex-col shadow-lg border-border/50">
+      <Card className="h-full flex flex-col shadow-lg border-border/50 relative">
+        {hasNotifications && (
+          <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold animate-pulse z-10">
+            {newDates.length}
+          </div>
+        )}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <CardTitle className="text-xl font-bold">{organization.name}</CardTitle>
@@ -93,9 +101,16 @@ const OrganizationCard = ({
             >
               <div className="flex-1 min-w-0 mr-3">
                 <p className="text-sm font-medium truncate">{event.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {event.date || "Date not available - will monitor and notify when announced"}
-                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-muted-foreground">
+                    {event.date || "Date not available - will monitor and notify when announced"}
+                  </p>
+                  {!event.date && newDates.some(nd => nd.event_name === event.name) && (
+                    <Badge variant="default" className="text-xs py-0 px-1.5 bg-primary text-primary-foreground">
+                      New!
+                    </Badge>
+                  )}
+                </div>
               </div>
               <Button
                 variant="ghost"

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { EventType, DEFAULT_EVENT_TYPES } from "@/types";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface EventSelectionDialogProps {
   open: boolean;
@@ -26,6 +28,7 @@ const EventSelectionDialog = ({
   onConfirm,
 }: EventSelectionDialogProps) => {
   const [events, setEvents] = useState<EventType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -48,35 +51,67 @@ const EventSelectionDialog = ({
     );
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const selectedEvents = events.filter((e) => e.selected);
     if (selectedEvents.length === 0) {
       toast.error("Please select at least one event");
       return;
     }
 
-    // Simulate fetching dates (in real app, this would query Google/ChatGPT)
-    const eventsWithDates = selectedEvents.map((event) => ({
-      ...event,
-      date: getMockDate(event.id),
-    }));
+    setIsLoading(true);
 
-    onConfirm(eventsWithDates);
+    try {
+      // Call the fetch-event-dates edge function
+      const { data, error } = await supabase.functions.invoke('fetch-event-dates', {
+        body: {
+          organizationName,
+          events: selectedEvents.map(e => e.name),
+        },
+      });
+
+      if (error) throw error;
+
+      const { eventDates } = data;
+
+      // Map the results back to our event structure
+      const eventsWithDates = selectedEvents.map((event) => {
+        const foundDate = eventDates?.find((ed: any) => ed.event === event.name);
+        return {
+          ...event,
+          date: foundDate?.date || null,
+        };
+      });
+
+      // Save events without dates to monitoring table
+      const eventsToMonitor = eventsWithDates.filter(e => !e.date);
+      
+      if (eventsToMonitor.length > 0) {
+        const monitoringInserts = eventsToMonitor.map(event => ({
+          organization_name: organizationName,
+          event_name: event.name,
+          date_found: null,
+        }));
+
+        const { error: monitorError } = await supabase
+          .from('event_monitoring')
+          .insert(monitoringInserts);
+
+        if (monitorError) {
+          console.error('Error adding events to monitoring:', monitorError);
+        }
+      }
+
+      onConfirm(eventsWithDates);
+      toast.success(`Added ${selectedEvents.length} events to your feed`);
+    } catch (error) {
+      console.error('Error fetching event dates:', error);
+      toast.error('Failed to fetch event dates. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Mock date generator for demo purposes
-  const getMockDate = (eventId: string): string => {
-    const dates: Record<string, string> = {
-      "first-day": "Aug 17",
-      "fall-break": "Oct 14-16",
-      "thanksgiving": "Nov 23-27",
-      "winter-break": "Dec 18 - Jan 8",
-      "spring-break": "Mar 11-15",
-      "graduation": "May 12",
-      "last-day": "May 8",
-    };
-    return dates[eventId] || "TBD";
-  };
+  // Mock date generator removed - now using real API
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -110,11 +145,27 @@ const EventSelectionDialog = ({
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="w-full sm:w-auto"
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirm} className="w-full sm:w-auto">
-            Save to Feed
+          <Button 
+            onClick={handleConfirm} 
+            className="w-full sm:w-auto"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Finding dates...
+              </>
+            ) : (
+              'Save to Feed'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
