@@ -25,6 +25,30 @@ const IconPreview = () => {
       description: "Teal-green gradient with geometric grid",
       path: "/icon-option-3.png",
     },
+    {
+      id: 4,
+      name: "Date Number",
+      description: "Minimalist date on blue-purple gradient",
+      path: "/icon-option-4.png",
+    },
+    {
+      id: 5,
+      name: "Frame Dot",
+      description: "Simple frame with dot, blue-purple gradient",
+      path: "/icon-option-5.png",
+    },
+    {
+      id: 6,
+      name: "Checkmark",
+      description: "Clean checkmark on blue-purple gradient",
+      path: "/icon-option-6.png",
+    },
+    {
+      id: 7,
+      name: "Three Dots",
+      description: "Circle with dots, blue-purple gradient",
+      path: "/icon-option-7.png",
+    },
   ];
 
   const handleDownload = (path: string, name: string) => {
