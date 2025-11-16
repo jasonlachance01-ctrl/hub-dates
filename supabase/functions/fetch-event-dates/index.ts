@@ -173,11 +173,13 @@ serve(async (req) => {
               .replace(/\s+/g, ' ')
               .trim();
             
-            pageContent += textContent.slice(0, 5000) + '\n\n';
+            pageContent += textContent.slice(0, 8000) + '\n\n';
           } catch (error) {
             console.error('Error fetching page:', url, error);
           }
         }
+
+        console.log(`Extracted ${pageContent.length} characters of content for ${event.name}`);
 
         if (!pageContent) {
           console.log('Could not fetch page content for', event.name);
@@ -195,31 +197,32 @@ serve(async (req) => {
           body: JSON.stringify({
             model: 'google/gemini-2.5-flash',
             messages: [
-              {
-                role: 'system',
-                content: `You are a date extraction expert. Your task is to find and extract dates from search results about school events.
-                
-Rules:
-- Look for specific dates in formats like "May 15, 2025", "5/15/25", "May 15", etc.
-- Look for date ranges like "March 10-14" or "December 20 - January 3"
-- Convert relative dates (like "next Monday" or "in 2 weeks") to actual dates if possible
+                {
+                  role: 'system',
+                  content: `You are a date extraction expert for school calendars. Your job is to find dates in web content.
+
+CRITICAL RULES:
+- Look for ANY date-like patterns: "May 15", "5/15/25", "March 10-14", "December 20 - January 3"
+- Look for phrases like "begins", "starts", "ends", "from...to", "through"
 - For date ranges, return the START date
-- If you find a date, return it in "Month Day, Year" format (e.g., "May 15, 2025")
-- If you cannot find ANY date information, return "Date not found"
-- Be generous in your interpretation - any mention of a date related to the event counts`
-              },
-              {
-                role: 'user',
-                content: `Find the date for this event:
+- Convert all dates to "Month Day, Year" format
+- If you see a year like "24" or "25", assume it means "2024" or "2025"
+- For events like "Spring Break" or "Winter Break", look for mentions of those specific terms followed by dates
+- Be generous - if you see ANY date related to the event, extract it
+- Only return "Date not found" if there are absolutely NO dates in the content`
+                },
+                {
+                  role: 'user',
+                  content: `EVENT TO FIND: ${event.name}
+SCHOOL: ${organizationName}
 
-Event: ${event.name}
-School/Organization: ${organizationName}
+Look through this web page content and find when ${event.name} occurs. Look for ANY mention of dates near the words "${event.name}".
 
-Full Page Content from Top Search Results:
-${pageContent}
+WEB CONTENT:
+${pageContent.slice(0, 12000)}
 
-Extract the date if you can find it.`
-              }
+What is the date? Be specific and extract it from the content above.`
+                }
             ],
             tools: [
               {
@@ -255,6 +258,9 @@ Extract the date if you can find it.`
         const aiData = await aiResponse.json();
         const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
         const dateStr = toolCall ? JSON.parse(toolCall.function.arguments).date : null;
+
+        console.log(`AI extraction result for ${event.name}: ${dateStr}`);
+        console.log(`AI response:`, JSON.stringify(aiData.choices?.[0]?.message));
 
         // If Google Search didn't find a date, try asking GPT-5 directly
         if (!dateStr || dateStr === 'Date not found') {
