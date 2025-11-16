@@ -37,16 +37,7 @@ const Index = () => {
             <p className="font-bold leading-tight italic text-primary text-center font-serif text-4xl">in one Place!</p>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Enter the name or URL of any school, organization, or team to add it to your feed and select the important events to import into your own calendar. Be the first to know with notifications of updates or new additions to any of your feed calendars. Allow notifications from this app in your{" "}
-            <a href="app-settings:notification_id=com.calendarflow" className="text-primary underline hover:text-primary-hover" onClick={e => {
-            // Fallback for web - show instructions
-            if (!navigator.userAgent.match(/(iPhone|iPad|iPod|Android)/i)) {
-              e.preventDefault();
-              alert('To enable notifications, please check your device settings > CalendarFlow > Notifications');
-            }
-          }}>
-              settings
-            </a>.
+            Enter the name or URL of any school, organization, or team to add to your feed then select the important events to import into your own calendar
           </p>
         </div>
       </section>
