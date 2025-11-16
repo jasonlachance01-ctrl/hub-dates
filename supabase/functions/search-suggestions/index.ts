@@ -1,0 +1,68 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { query } = await req.json();
+
+    if (!query || query.trim().length === 0) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const apiKey = Deno.env.get('GOOGLE_SEARCH_API_KEY');
+    const searchEngineId = Deno.env.get('GOOGLE_SEARCH_ENGINE_ID');
+
+    if (!apiKey || !searchEngineId) {
+      console.error('Missing API credentials');
+      return new Response(JSON.stringify({ error: 'Missing API credentials' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
+
+    console.log('Fetching search suggestions for:', query);
+
+    const response = await fetch(searchUrl);
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Google Search API error:', data);
+      return new Response(JSON.stringify({ error: 'Search API error', details: data }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const suggestions = data.items?.map((item: any) => ({
+      title: item.title,
+      link: item.link,
+      snippet: item.snippet,
+    })) || [];
+
+    console.log('Found suggestions:', suggestions.length);
+
+    return new Response(JSON.stringify({ suggestions }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in search-suggestions function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
