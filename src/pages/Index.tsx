@@ -10,6 +10,11 @@ const Index = () => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
   });
+  const [userCount, setUserCount] = useState(() => {
+    // Get user count from localStorage
+    const stored = localStorage.getItem('userCount');
+    return stored ? parseInt(stored, 10) : 0;
+  });
   const handleAddOrganization = (org: Organization) => {
     setOrganizations(prev => [...prev, org]);
   };
@@ -31,15 +36,28 @@ const Index = () => {
     // Save to localStorage so it persists
     localStorage.setItem('calendarConnected', 'true');
   };
+
+  const handleSearchPerformed = () => {
+    const newCount = userCount + 1;
+    setUserCount(newCount);
+    localStorage.setItem('userCount', newCount.toString());
+  };
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header Section */}
       <header className="flex-shrink-0 px-4 pt-6 pb-4">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-foreground">Calsync</h1>
-            <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
-              Beta
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="px-3 py-1 bg-secondary/10 border border-border rounded-full">
+                <span className="text-xs font-semibold text-foreground">
+                  Users: {userCount}
+                </span>
+              </div>
+              <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full">
+                Beta
+              </span>
+            </div>
           </div>
         </div>
       </header>
@@ -62,7 +80,7 @@ const Index = () => {
         <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
           {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-end pb-20">
               <div className="w-full space-y-8 mb-8">
-                <SearchBar onAdd={handleAddOrganization} />
+                <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
                 <div className="text-center space-y-3 px-6">
                   <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +98,7 @@ const Index = () => {
                 </div>
               </div>
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
-              <SearchBar onAdd={handleAddOrganization} />
+              <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
               <div className="mt-8">
                 <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} onAddToCalendarClick={handleAddToCalendarClick} />
               </div>
