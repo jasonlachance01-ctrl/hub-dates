@@ -55,14 +55,48 @@ serve(async (req) => {
           const searchData = await searchResponse.json();
           
           if (searchData.items && searchData.items.length > 0) {
-            // Collect more comprehensive data from top 5 results
-            const searchContext = searchData.items.slice(0, 5)
-              .map((item: any) => `Title: ${item.title}\nURL: ${item.link}\nSnippet: ${item.snippet}`)
-              .join('\n\n---\n\n');
+            // Extract comprehensive search context including AI Overview-like content
+            let searchContext = '';
             
-            console.log('Got Google search results, analyzing...');
+            // Check for any answer box or featured snippet (Google's AI Overview equivalent in API)
+            if (searchData.searchInformation?.answerBox) {
+              searchContext += `AI Overview/Answer Box: ${JSON.stringify(searchData.searchInformation.answerBox)}\n\n---\n\n`;
+            }
+            
+            // Collect rich data from top 10 results including HTML snippets
+            searchContext += searchData.items.slice(0, 10)
+              .map((item: any) => {
+                let itemText = `Title: ${item.title}\nURL: ${item.link}\n`;
+                
+                // Include regular snippet
+                if (item.snippet) {
+                  itemText += `Snippet: ${item.snippet}\n`;
+                }
+                
+                // Include HTML snippet which may have richer content
+                if (item.htmlSnippet) {
+                  // Remove HTML tags to get clean text
+                  const cleanHtml = item.htmlSnippet.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                  if (cleanHtml !== item.snippet) {
+                    itemText += `Extended: ${cleanHtml}\n`;
+                  }
+                }
+                
+                // Include structured data if available
+                if (item.pagemap?.metatags?.[0]) {
+                  const meta = item.pagemap.metatags[0];
+                  if (meta.description || meta['og:description']) {
+                    itemText += `Meta: ${meta.description || meta['og:description']}\n`;
+                  }
+                }
+                
+                return itemText;
+              })
+              .join('\n---\n\n');
+            
+            console.log('Got comprehensive Google search results, length:', searchContext.length);
 
-            // Use GPT-5 to extract the date with better prompt
+            // Use GPT-5 to extract the date with enhanced prompt
             const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -74,20 +108,21 @@ serve(async (req) => {
                 messages: [
                   {
                     role: 'system',
-                    content: 'You are a date extraction expert. Your job is to find the exact date of events from search results. Only return dates you are confident about from the provided context.'
+                    content: 'You are a date extraction expert. Your job is to find the exact date of events from search results including AI Overviews, answer boxes, and search snippets. Only return dates you are highly confident about from the provided context.'
                   },
                   {
                     role: 'user',
                     content: `Find the date for: "${event.name}" hosted by "${organizationName}"
 
-Search Results:
+Search Results (including AI Overview and snippets):
 ${searchContext}
 
 Instructions:
-1. Look for explicit dates in the search results
-2. Prefer dates in 2025 or later
-3. Return ONLY the date in "Month Day, Year" format (e.g., "March 15, 2025")
-4. If no clear date is found, return exactly "NOT_FOUND"
+1. Pay special attention to AI Overview/Answer Box content at the top
+2. Look for explicit dates in all search result content
+3. Prefer dates in 2025 or later
+4. Return ONLY the date in "Month Day, Year" format (e.g., "March 15, 2025")
+5. If no clear date is found, return exactly "NOT_FOUND"
 
 Date:`
                   }
