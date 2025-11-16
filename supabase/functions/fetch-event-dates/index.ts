@@ -96,7 +96,7 @@ serve(async (req) => {
             
             console.log('Got comprehensive Google search results, length:', searchContext.length);
 
-            // Use GPT-5 to extract the date with enhanced prompt
+            // Use Gemini to extract the date with enhanced prompt
             const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -104,30 +104,29 @@ serve(async (req) => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'openai/gpt-5',
+                model: 'google/gemini-2.5-flash',
                 messages: [
                   {
-                    role: 'system',
-                    content: 'You are a date extraction expert. Your job is to find the exact date of events from search results including AI Overviews, answer boxes, and search snippets. Only return dates you are highly confident about from the provided context.'
-                  },
-                  {
                     role: 'user',
-                    content: `Find the date for: "${event.name}" hosted by "${organizationName}"
+                    content: `You are a date extraction expert. Extract the exact date for the event "${event.name}" hosted by "${organizationName}" from these search results.
 
-Search Results (including AI Overview and snippets):
+Search Results:
 ${searchContext}
 
-Instructions:
-1. Pay special attention to AI Overview/Answer Box content at the top
-2. Look for explicit dates in all search result content
-3. Prefer dates in 2025 or later
-4. Return ONLY the date in "Month Day, Year" format (e.g., "March 15, 2025")
-5. If no clear date is found, return exactly "NOT_FOUND"
+TASK: Find the specific date for this event in 2025 or later.
 
-Date:`
+IMPORTANT:
+- Look carefully through ALL the search results
+- Pay special attention to any AI Overview or Answer Box content
+- Look for phrases like "Winter Break is from December 22, 2025" or "Spring Break: March 15-23, 2025"
+- If you find a date range, use the START date
+- Return ONLY the date in this exact format: "Month Day, Year" (example: "December 22, 2025")
+- If you cannot find a clear date, respond with exactly: "NOT_FOUND"
+
+Your response (just the date or NOT_FOUND):`
                   }
                 ],
-                max_completion_tokens: 50
+                max_tokens: 50
               }),
             });
 
@@ -135,7 +134,7 @@ Date:`
               const extractData = await extractResponse.json();
               const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
               
-              console.log('GPT-5 extracted from search:', extracted);
+              console.log('Gemini extracted from search:', extracted);
               
               // Parse for date pattern
               const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
@@ -151,8 +150,8 @@ Date:`
           }
         }
 
-        // METHOD 2: If Google didn't work, ask GPT-5 directly with knowledge
-        console.log('Trying GPT-5 direct knowledge query...');
+        // METHOD 2: If Google didn't work, ask Gemini directly with knowledge
+        console.log('Trying Gemini direct knowledge query...');
         
         const directResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
@@ -161,12 +160,8 @@ Date:`
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'openai/gpt-5',
+            model: 'google/gemini-2.5-flash',
             messages: [
-              {
-                role: 'system',
-                content: 'You are an expert on organizational events and conferences. Provide accurate dates based on your knowledge. Only respond with dates you are confident about.'
-              },
               {
                 role: 'user',
                 content: `What is the exact date of "${event.name}" for ${organizationName} in 2025?
@@ -177,7 +172,7 @@ If you don't know the exact date, respond with exactly "NOT_FOUND".
 Date:`
               }
             ],
-            max_completion_tokens: 50
+            max_tokens: 50
           }),
         });
 
@@ -185,7 +180,7 @@ Date:`
           const directData = await directResponse.json();
           const answer = directData.choices?.[0]?.message?.content?.trim() || '';
           
-          console.log('GPT-5 knowledge answer:', answer);
+          console.log('Gemini knowledge answer:', answer);
           
           // Extract date pattern from response
           const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
@@ -198,10 +193,11 @@ Date:`
             eventDates.push({ eventName: event.name, date: null });
             console.log('✗ No date found for', event.name);
           }
-        } else {
-          eventDates.push({ eventName: event.name, date: null });
-          console.log('✗ GPT-5 request failed for', event.name);
-        }
+          } else {
+            const errorText = await directResponse.text();
+            console.error('✗ Gemini request failed for', event.name, ':', errorText);
+            eventDates.push({ eventName: event.name, date: null });
+          }
 
         // Rate limit protection
         await new Promise(resolve => setTimeout(resolve, 900));
