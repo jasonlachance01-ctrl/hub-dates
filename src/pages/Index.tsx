@@ -31,9 +31,9 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="flex-shrink-0 px-4 py-8">
-        <div className="max-w-md mx-auto text-center space-y-4">
-          <h2 className="text-3xl font-bold text-foreground">
-            Subscribe to all of Your Events <span className="italic text-primary">in one place</span>
+        <div className="max-w-md mx-auto text-center space-y-6">
+          <h2 className="text-4xl font-bold text-foreground leading-tight">
+            Subscribe to all of Your Events <span className="text-4xl italic font-bold text-primary">in one place</span>
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Enter the name or URL of any school, organization, or team to add it to your feed and select the important events to import into your own calendar. Be the first to know with notifications of updates or new additions to any of your feed calendars. Allow notifications from this app in your{" "}
