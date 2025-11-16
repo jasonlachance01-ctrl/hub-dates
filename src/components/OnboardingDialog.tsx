@@ -21,10 +21,6 @@ const OnboardingDialog = ({
     onConnect();
   };
 
-  const handleSkip = () => {
-    toast.info("You can connect your calendar later from settings");
-    onClose();
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -35,8 +31,7 @@ const OnboardingDialog = ({
           </div>
           <DialogTitle className="text-center text-lg sm:text-xl">Connect Your Calendar</DialogTitle>
           <DialogDescription className="text-center text-sm sm:text-base px-2">
-            Connect your iOS calendar to automatically add important dates and never miss
-            an event
+            Connect your iPhone calendar to automatically add important dates and never miss events!
           </DialogDescription>
         </DialogHeader>
 
@@ -56,6 +51,12 @@ const OnboardingDialog = ({
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
+              Sharing capability to send important dates to family and friends.
+            </p>
+          </div>
+          <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-muted-foreground flex-1">
               All data stays private and secure
             </p>
           </div>
@@ -64,9 +65,6 @@ const OnboardingDialog = ({
         <DialogFooter className="flex-col sm:flex-col gap-2">
           <Button onClick={handleConnect} className="w-full text-sm sm:text-base">
             Connect iOS Calendar
-          </Button>
-          <Button variant="ghost" onClick={handleSkip} className="w-full text-sm sm:text-base">
-            Skip for now
           </Button>
         </DialogFooter>
       </DialogContent>
