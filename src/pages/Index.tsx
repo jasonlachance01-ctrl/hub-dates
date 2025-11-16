@@ -32,22 +32,17 @@ const Index = () => {
       {/* Hero Section */}
       <section className="flex-shrink-0 px-4 py-8">
         <div className="max-w-md mx-auto text-center space-y-6">
-          <h2 className="text-4xl font-bold text-foreground leading-tight">
-            Subscribe to all of Your Events <span className="text-4xl italic font-bold text-primary">in one place</span>
+          <h2 className="font-bold leading-tight text-6xl text-neutral-700">Subscribe to all of Your Events<span className="text-4xl italic font-bold text-primary">in one place</span>
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Enter the name or URL of any school, organization, or team to add it to your feed and select the important events to import into your own calendar. Be the first to know with notifications of updates or new additions to any of your feed calendars. Allow notifications from this app in your{" "}
-            <a 
-              href="app-settings:notification_id=com.calendarflow" 
-              className="text-primary underline hover:text-primary-hover"
-              onClick={(e) => {
-                // Fallback for web - show instructions
-                if (!navigator.userAgent.match(/(iPhone|iPad|iPod|Android)/i)) {
-                  e.preventDefault();
-                  alert('To enable notifications, please check your device settings > CalendarFlow > Notifications');
-                }
-              }}
-            >
+            <a href="app-settings:notification_id=com.calendarflow" className="text-primary underline hover:text-primary-hover" onClick={e => {
+            // Fallback for web - show instructions
+            if (!navigator.userAgent.match(/(iPhone|iPad|iPod|Android)/i)) {
+              e.preventDefault();
+              alert('To enable notifications, please check your device settings > CalendarFlow > Notifications');
+            }
+          }}>
               settings
             </a>.
           </p>
@@ -70,8 +65,9 @@ const Index = () => {
                     No calendars yet
                   </h2>
                   <p className="text-muted-foreground text-sm">
-                    Search for schools, teams, or organizations to add their important dates
-                    to your feed
+                    Search for schools, teams, or organizations to add their important dates to your feed and effortlessyly add to your calendar
+
+      
                   </p>
                 </div>
               </div>
