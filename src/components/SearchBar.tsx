@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 
 interface SearchBarProps {
   onAdd: (organization: Organization) => void;
+  onSearchPerformed?: () => void;
 }
 
 interface SearchSuggestion {
@@ -18,7 +19,7 @@ interface SearchSuggestion {
   snippet: string;
 }
 
-const SearchBar = ({ onAdd }: SearchBarProps) => {
+const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [pendingOrgName, setPendingOrgName] = useState("");
@@ -145,6 +146,9 @@ const SearchBar = ({ onAdd }: SearchBarProps) => {
       setSearchQuery("");
       setSuggestions([]);
       
+      // Increment user count
+      onSearchPerformed?.();
+      
       toast.dismiss(loadingToast);
       toast.success(`${pendingOrgName} added to your feed`);
     } catch (error) {
@@ -162,6 +166,9 @@ const SearchBar = ({ onAdd }: SearchBarProps) => {
       onAdd(newOrg);
       setSearchQuery("");
       setSuggestions([]);
+      
+      // Increment user count
+      onSearchPerformed?.();
       toast.warning(`${pendingOrgName} added, but couldn't fetch all dates`);
     }
   };
