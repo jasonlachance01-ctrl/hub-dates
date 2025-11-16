@@ -99,6 +99,7 @@ serve(async (req) => {
               .join('\n---\n\n');
             
             console.log('Got comprehensive Google search results, length:', searchContext.length);
+            console.log('First 500 chars of search context:', searchContext.substring(0, 500));
 
             // Use Gemini to extract the date with enhanced prompt
             const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -117,19 +118,21 @@ serve(async (req) => {
 Search Results:
 ${searchContext}
 
-TASK: Find the specific date for this event in ${currentYear}-${nextYear}.
+CRITICAL INSTRUCTIONS:
+1. Look for ANY mention of dates for this event, including phrases like:
+   - "graduation is expected to be on Thursday, May 14, 2026"
+   - "Winter Break is from December 22, 2025 to January 2, 2026"
+   - "Spring Break: March 15-23, 2026"
+   - "The ceremony will be held on [date]"
+   - "scheduled for [date]"
 
-IMPORTANT:
-- Look carefully through ALL the search results
-- Pay special attention to any AI Overview or Answer Box content
-- Look for phrases like "Winter Break is from December 22, 2025 to January 2, 2026" or "Spring Break: March 15-23, 2026"
-- If you find a date range (like "March 21, 2026 - March 28, 2026"), return the FULL range in format "Month Day, Year - Month Day, Year"
-- If you find multiple dates for different years, use ONLY the LATER year (${nextYear} over ${currentYear})
-- ONLY return dates in ${currentYear} or later - ignore any past dates
-- Return the date or range in these formats: "Month Day, Year" or "Month Day, Year - Month Day, Year" (example: "March 21, 2026 - March 28, 2026")
-- If you cannot find a clear future date, respond with exactly: "NOT_FOUND"
+2. If you find a date range, return the FULL range: "Month Day, Year - Month Day, Year"
+3. If you find multiple dates for different years, use the LATER year (${nextYear})
+4. ONLY return dates in ${currentYear} or later
+5. Return ONLY the date in format "Month Day, Year" or "Month Day, Year - Month Day, Year"
+6. If NO date is found, respond with exactly: "NOT_FOUND"
 
-Your response (just the date or NOT_FOUND):`
+Extract the date now:`
                   }
                 ],
                 max_tokens: 50
