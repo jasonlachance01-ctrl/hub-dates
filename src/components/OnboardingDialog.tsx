@@ -51,13 +51,13 @@ const OnboardingDialog = ({
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
-              Sharing capability to send important dates to family and friends.
+              Sharing capability to send important dates to family and friends!
             </p>
           </div>
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
-              All data stays private and secure
+              All data stays private and secure!
             </p>
           </div>
         </div>
