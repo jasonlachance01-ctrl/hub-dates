@@ -86,10 +86,21 @@ const SearchBar = ({ onAdd }: SearchBarProps) => {
     setShowEventDialog(true);
   };
 
+  const cleanOrganizationName = (name: string): string => {
+    // Remove common suffixes from search results
+    return name
+      .replace(/:\s*Home$/i, '')
+      .replace(/\s*-\s*Home$/i, '')
+      .replace(/\s*\|\s*.*$/i, '')
+      .replace(/\s*-\s*Official.*$/i, '')
+      .trim();
+  };
+
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
+    const cleanName = cleanOrganizationName(suggestion.title);
     setSearchQuery(suggestion.title);
     setShowSuggestions(false);
-    handleSearchWithName(suggestion.title, suggestion.link);
+    handleSearchWithName(cleanName, suggestion.link);
   };
 
   const handleSearchWithName = (name: string, url?: string) => {
