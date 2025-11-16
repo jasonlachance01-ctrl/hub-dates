@@ -61,13 +61,44 @@ serve(async (req) => {
         // Extract snippets from search results
         const snippets = searchData.items?.map((item: any) => item.snippet).join('\n') || '';
 
-        if (!snippets) {
-          console.log('No snippets found for', event.name);
+        // Get the top URLs from search results
+        const topUrls = searchData.items?.slice(0, 2).map((item: any) => item.link) || [];
+        
+        if (topUrls.length === 0) {
+          console.log('No URLs found for', event.name);
           eventDates.push({ eventName: event.name, date: null });
           continue;
         }
 
-        // Use AI to extract the date from snippets with better prompting
+        // Fetch and parse the actual web pages
+        let pageContent = '';
+        for (const url of topUrls) {
+          try {
+            console.log('Fetching page:', url);
+            const pageResponse = await fetch(url);
+            const html = await pageResponse.text();
+            
+            // Extract text content from HTML (simple approach)
+            const textContent = html
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            pageContent += textContent.slice(0, 5000) + '\n\n';
+          } catch (error) {
+            console.error('Error fetching page:', url, error);
+          }
+        }
+
+        if (!pageContent) {
+          console.log('Could not fetch page content for', event.name);
+          eventDates.push({ eventName: event.name, date: null });
+          continue;
+        }
+
+        // Use AI to extract the date from full page content
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -97,8 +128,8 @@ Rules:
 Event: ${event.name}
 School/Organization: ${organizationName}
 
-Search Results:
-${snippets}
+Full Page Content from Top Search Results:
+${pageContent}
 
 Extract the date if you can find it.`
               }
