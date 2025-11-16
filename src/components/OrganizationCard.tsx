@@ -94,7 +94,7 @@ const OrganizationCard = ({
               <div className="flex-1 min-w-0 mr-3">
                 <p className="text-sm font-medium truncate">{event.name}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {event.date || "Date not available"}
+                  {event.date || "Date not available - will monitor and notify when announced"}
                 </p>
               </div>
               <Button
