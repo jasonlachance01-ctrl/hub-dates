@@ -33,8 +33,8 @@ const Index = () => {
       <section className="flex-shrink-0 px-4 py-8">
         <div className="max-w-md mx-auto text-center space-y-6">
           <div>
-            <h2 className="font-bold leading-tight text-6xl text-neutral-700">Subscribe to all of Your Events</h2>
-            <p className="font-bold leading-tight text-6xl italic text-primary">In One Place</p>
+            <h2 className="font-bold leading-tight text-neutral-700 text-4xl font-serif">Subscribe to all of Your Events</h2>
+            <p className="font-bold leading-tight italic text-primary text-center font-serif text-4xl">in one Place!</p>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Enter the name or URL of any school, organization, or team to add it to your feed and select the important events to import into your own calendar. Be the first to know with notifications of updates or new additions to any of your feed calendars. Allow notifications from this app in your{" "}
