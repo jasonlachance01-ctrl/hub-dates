@@ -67,7 +67,7 @@ serve(async (req) => {
           continue;
         }
 
-        // Use AI to extract the date from snippets
+        // Use AI to extract the date from snippets with better prompting
         const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -79,11 +79,28 @@ serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: `Extract the date from the search results. Return ONLY the date in format "Month Day, Year" (e.g., "May 15, 2025"). If you can't find a specific date, return "Date not found".`
+                content: `You are a date extraction expert. Your task is to find and extract dates from search results about school events.
+                
+Rules:
+- Look for specific dates in formats like "May 15, 2025", "5/15/25", "May 15", etc.
+- Look for date ranges like "March 10-14" or "December 20 - January 3"
+- Convert relative dates (like "next Monday" or "in 2 weeks") to actual dates if possible
+- For date ranges, return the START date
+- If you find a date, return it in "Month Day, Year" format (e.g., "May 15, 2025")
+- If you cannot find ANY date information, return "Date not found"
+- Be generous in your interpretation - any mention of a date related to the event counts`
               },
               {
                 role: 'user',
-                content: `Event: ${event.name}\nOrganization: ${organizationName}\n\nSearch results:\n${snippets}\n\nWhat is the date?`
+                content: `Find the date for this event:
+
+Event: ${event.name}
+School/Organization: ${organizationName}
+
+Search Results:
+${snippets}
+
+Extract the date if you can find it.`
               }
             ],
             tools: [
