@@ -43,26 +43,26 @@ serve(async (req) => {
     // Fetch dates for each event
     for (const event of events) {
       try {
-        // Simple, direct query - exactly how a user would ask
-        const query = `What date is ${event.name} for ${organizationName}`;
-        console.log('Query:', query);
+        // Comprehensive search query to find the date
+        const query = `${organizationName} ${event.name} 2025 date when schedule`;
+        console.log('Search Query:', query);
 
         // METHOD 1: Try Google Search API first
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10`;
         const searchResponse = await fetch(searchUrl);
         
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
           
           if (searchData.items && searchData.items.length > 0) {
-            // Collect snippets from top 3 results
-            const snippets = searchData.items.slice(0, 3)
-              .map((item: any) => `${item.title}\n${item.snippet}`)
-              .join('\n\n');
+            // Collect more comprehensive data from top 5 results
+            const searchContext = searchData.items.slice(0, 5)
+              .map((item: any) => `Title: ${item.title}\nURL: ${item.link}\nSnippet: ${item.snippet}`)
+              .join('\n\n---\n\n');
             
-            console.log('Got Google snippets, length:', snippets.length);
+            console.log('Got Google search results, analyzing...');
 
-            // Use GPT-5 Mini to extract the date from snippets
+            // Use GPT-5 to extract the date with better prompt
             const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
               method: 'POST',
               headers: {
@@ -70,19 +70,28 @@ serve(async (req) => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'openai/gpt-5-mini',
+                model: 'openai/gpt-5',
                 messages: [
                   {
+                    role: 'system',
+                    content: 'You are a date extraction expert. Your job is to find the exact date of events from search results. Only return dates you are confident about from the provided context.'
+                  },
+                  {
                     role: 'user',
-                    content: `Look at these Google search results and extract the EXACT date for this question: "${query}"
+                    content: `Find the date for: "${event.name}" hosted by "${organizationName}"
 
 Search Results:
-${snippets}
+${searchContext}
 
-Return ONLY the date in "Month Day, Year" format (like "May 15, 2025"). If you cannot find a specific date, return "NOT_FOUND".`
+Instructions:
+1. Look for explicit dates in the search results
+2. Prefer dates in 2025 or later
+3. Return ONLY the date in "Month Day, Year" format (e.g., "March 15, 2025")
+4. If no clear date is found, return exactly "NOT_FOUND"
+
+Date:`
                   }
                 ],
-                temperature: 0,
                 max_completion_tokens: 50
               }),
             });
@@ -91,20 +100,24 @@ Return ONLY the date in "Month Day, Year" format (like "May 15, 2025"). If you c
               const extractData = await extractResponse.json();
               const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
               
-              console.log('Extracted from Google:', extracted);
+              console.log('GPT-5 extracted from search:', extracted);
               
-              if (extracted && extracted !== 'NOT_FOUND' && !extracted.includes('NOT_FOUND') && extracted.length < 100) {
-                eventDates.push({ eventName: event.name, date: extracted });
-                console.log('✓ Found via Google for', event.name);
-                await new Promise(resolve => setTimeout(resolve, 600));
+              // Parse for date pattern
+              const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+              const dateMatch = extracted.match(datePattern);
+              
+              if (dateMatch) {
+                eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                console.log('✓ Found via Google Search for', event.name, ':', dateMatch[0]);
+                await new Promise(resolve => setTimeout(resolve, 700));
                 continue;
               }
             }
           }
         }
 
-        // METHOD 2: If Google didn't work, ask GPT-5 directly
-        console.log('Trying GPT-5 direct answer...');
+        // METHOD 2: If Google didn't work, ask GPT-5 directly with knowledge
+        console.log('Trying GPT-5 direct knowledge query...');
         
         const directResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
@@ -116,14 +129,20 @@ Return ONLY the date in "Month Day, Year" format (like "May 15, 2025"). If you c
             model: 'openai/gpt-5',
             messages: [
               {
+                role: 'system',
+                content: 'You are an expert on organizational events and conferences. Provide accurate dates based on your knowledge. Only respond with dates you are confident about.'
+              },
+              {
                 role: 'user',
-                content: `${query}
+                content: `What is the exact date of "${event.name}" for ${organizationName} in 2025?
 
-Answer with ONLY the date in "Month Day, Year" format. If you do not know the specific date, return "NOT_FOUND".`
+Respond with ONLY the date in "Month Day, Year" format (e.g., "April 20, 2025").
+If you don't know the exact date, respond with exactly "NOT_FOUND".
+
+Date:`
               }
             ],
-            temperature: 0.2,
-            max_completion_tokens: 100
+            max_completion_tokens: 50
           }),
         });
 
@@ -131,7 +150,7 @@ Answer with ONLY the date in "Month Day, Year" format. If you do not know the sp
           const directData = await directResponse.json();
           const answer = directData.choices?.[0]?.message?.content?.trim() || '';
           
-          console.log('GPT-5 direct answer:', answer);
+          console.log('GPT-5 knowledge answer:', answer);
           
           // Extract date pattern from response
           const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
@@ -139,11 +158,7 @@ Answer with ONLY the date in "Month Day, Year" format. If you do not know the sp
           
           if (dateMatch) {
             eventDates.push({ eventName: event.name, date: dateMatch[0] });
-            console.log('✓ Found via GPT-5 for', event.name, ':', dateMatch[0]);
-          } else if (answer && answer !== 'NOT_FOUND' && !answer.includes('NOT_FOUND') && answer.length < 100) {
-            // Use the answer as-is if it looks like a date
-            eventDates.push({ eventName: event.name, date: answer });
-            console.log('✓ Using GPT-5 answer for', event.name, ':', answer);
+            console.log('✓ Found via GPT-5 knowledge for', event.name, ':', dateMatch[0]);
           } else {
             eventDates.push({ eventName: event.name, date: null });
             console.log('✗ No date found for', event.name);
@@ -154,7 +169,7 @@ Answer with ONLY the date in "Month Day, Year" format. If you do not know the sp
         }
 
         // Rate limit protection
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 900));
 
       } catch (error) {
         console.error('Error fetching date for', event.name, ':', error);
