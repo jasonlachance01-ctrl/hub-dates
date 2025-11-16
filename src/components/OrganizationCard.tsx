@@ -20,6 +20,7 @@ interface OrganizationCardProps {
   onRemove: () => void;
   onUpdate: (updated: Organization) => void;
   calendarConnected: boolean;
+  onAddToCalendarClick: () => void;
 }
 
 const OrganizationCard = ({
@@ -27,6 +28,7 @@ const OrganizationCard = ({
   onRemove,
   onUpdate,
   calendarConnected,
+  onAddToCalendarClick,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -44,8 +46,9 @@ const OrganizationCard = ({
   };
 
   const handleAddToCalendar = () => {
+    // Trigger onboarding dialog if calendar not connected
     if (!calendarConnected) {
-      toast.error("Please connect your calendar first");
+      onAddToCalendarClick();
       return;
     }
 
