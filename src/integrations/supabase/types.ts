@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      event_monitoring: {
+        Row: {
+          created_at: string
+          date_found: string | null
+          event_name: string
+          id: string
+          last_checked: string | null
+          notification_sent: boolean | null
+          organization_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_found?: string | null
+          event_name: string
+          id?: string
+          last_checked?: string | null
+          notification_sent?: boolean | null
+          organization_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_found?: string | null
+          event_name?: string
+          id?: string
+          last_checked?: string | null
+          notification_sent?: boolean | null
+          organization_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
