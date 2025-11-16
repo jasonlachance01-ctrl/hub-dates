@@ -3,7 +3,6 @@ import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
 import { Organization } from "@/types";
-
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -11,26 +10,21 @@ const Index = () => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
   });
-
   const handleAddOrganization = (org: Organization) => {
     setOrganizations(prev => [...prev, org]);
   };
-
   const handleRemoveOrganization = (id: string) => {
     setOrganizations(prev => prev.filter(org => org.id !== id));
   };
-
   const handleUpdateOrganization = (id: string, updatedOrg: Organization) => {
     setOrganizations(prev => prev.map(org => org.id === id ? updatedOrg : org));
   };
-
   const handleAddToCalendarClick = () => {
     // Only show dialog if calendar not connected yet
     if (!calendarConnected) {
       setShowOnboarding(true);
     }
   };
-
   const handleCalendarConnect = () => {
     setCalendarConnected(true);
     setShowOnboarding(false);
@@ -58,7 +52,7 @@ const Index = () => {
             <p className="font-bold leading-tight italic text-primary text-center font-serif text-4xl">in one Place!</p>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Enter the name or URL of any school, organization, or team to add to your feed then select the important events to import into your own calendar
+            Enter the name or URL of any School, Organization, or Team to add to your feed then select the important events to import into your own calendar.
           </p>
         </div>
       </section>
@@ -88,24 +82,14 @@ const Index = () => {
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
               <SearchBar onAdd={handleAddOrganization} />
               <div className="mt-8">
-                <OrganizationCarousel 
-                  organizations={organizations} 
-                  onRemove={handleRemoveOrganization} 
-                  onUpdate={handleUpdateOrganization} 
-                  calendarConnected={calendarConnected}
-                  onAddToCalendarClick={handleAddToCalendarClick}
-                />
+                <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} onAddToCalendarClick={handleAddToCalendarClick} />
               </div>
             </div>}
         </div>
       </main>
 
       {/* Onboarding Dialog */}
-      <OnboardingDialog 
-        open={showOnboarding} 
-        onClose={() => setShowOnboarding(false)} 
-        onConnect={handleCalendarConnect}
-      />
+      <OnboardingDialog open={showOnboarding} onClose={() => setShowOnboarding(false)} onConnect={handleCalendarConnect} />
     </div>;
 };
 export default Index;
