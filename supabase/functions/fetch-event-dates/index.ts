@@ -123,10 +123,10 @@ IMPORTANT:
 - Look carefully through ALL the search results
 - Pay special attention to any AI Overview or Answer Box content
 - Look for phrases like "Winter Break is from December 22, 2025 to January 2, 2026" or "Spring Break: March 15-23, 2026"
-- If you find a date range (like "Dec 22, 2025 to Jan 2, 2026"), use the LATER/END date (Jan 2, 2026)
+- If you find a date range (like "March 21, 2026 - March 28, 2026"), return the FULL range in format "Month Day, Year - Month Day, Year"
 - If you find multiple dates for different years, use ONLY the LATER year (${nextYear} over ${currentYear})
 - ONLY return dates in ${currentYear} or later - ignore any past dates
-- Return ONLY the date in this exact format: "Month Day, Year" (example: "January 2, 2026")
+- Return the date or range in these formats: "Month Day, Year" or "Month Day, Year - Month Day, Year" (example: "March 21, 2026 - March 28, 2026")
 - If you cannot find a clear future date, respond with exactly: "NOT_FOUND"
 
 Your response (just the date or NOT_FOUND):`
@@ -142,9 +142,10 @@ Your response (just the date or NOT_FOUND):`
               
               console.log('Gemini extracted from search:', extracted);
               
-              // Parse for date pattern
-              const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
-              const dateMatch = extracted.match(datePattern);
+              // Parse for date pattern (single date or range)
+              const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+              const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+              const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
               
               if (dateMatch) {
                 eventDates.push({ eventName: event.name, date: dateMatch[0] });
@@ -174,8 +175,8 @@ Your response (just the date or NOT_FOUND):`
 
 IMPORTANT:
 - If there are multiple dates (e.g., one in ${currentYear} and one in ${nextYear}), provide ONLY the LATER date (${nextYear})
-- If there is a date range, provide the LATER/END date
-- Respond with ONLY the date in "Month Day, Year" format (e.g., "April 20, 2026")
+- If there is a date range, provide the FULL range in format "Month Day, Year - Month Day, Year"
+- Respond with the date or range in these formats: "Month Day, Year" or "Month Day, Year - Month Day, Year" (e.g., "March 21, 2026 - March 28, 2026")
 - If you don't know the exact date, respond with exactly "NOT_FOUND"
 
 Date:`
@@ -191,9 +192,10 @@ Date:`
           
           console.log('Gemini knowledge answer:', answer);
           
-          // Extract date pattern from response
-          const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-          const dateMatch = answer.match(datePattern);
+          // Extract date pattern from response (range or single date)
+          const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+          const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+          const dateMatch = answer.match(dateRangePattern) || answer.match(singleDatePattern);
           
           if (dateMatch) {
             eventDates.push({ eventName: event.name, date: dateMatch[0] });
