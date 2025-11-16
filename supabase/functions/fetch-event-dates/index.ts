@@ -138,12 +138,79 @@ Extract the date if you can find it.`
         const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
         const dateStr = toolCall ? JSON.parse(toolCall.function.arguments).date : null;
 
-        eventDates.push({
-          eventName: event.name,
-          date: dateStr && dateStr !== 'Date not found' ? dateStr : null
-        });
+        // If Google Search didn't find a date, try asking GPT-5 directly
+        if (!dateStr || dateStr === 'Date not found') {
+          console.log('Google Search failed, trying GPT-5 directly for', event.name);
 
-        console.log('Found date for', event.name, ':', dateStr);
+          const gptResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'openai/gpt-5',
+              messages: [
+                {
+                  role: 'system',
+                  content: `You are an expert on school calendars and academic schedules. Provide specific dates when asked about school events.
+                  
+Rules:
+- Return dates in "Month Day, Year" format (e.g., "May 15, 2025")
+- For recurring events, provide the most recent or upcoming date
+- If you know typical patterns (e.g., "Spring break is usually mid-March"), provide that
+- If you truly don't know, return "Date not found"
+- Be specific and confident when you do know`
+                },
+                {
+                  role: 'user',
+                  content: `When is ${event.name} for ${organizationName}? Provide the specific date.`
+                }
+              ],
+              tools: [
+                {
+                  type: "function",
+                  function: {
+                    name: "extract_date",
+                    description: "Provide the event date",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        date: {
+                          type: "string",
+                          description: "The date in format 'Month Day, Year' or 'Date not found'"
+                        }
+                      },
+                      required: ["date"],
+                      additionalProperties: false
+                    }
+                  }
+                }
+              ],
+              tool_choice: { type: "function", function: { name: "extract_date" } }
+            }),
+          });
+
+          if (gptResponse.ok) {
+            const gptData = await gptResponse.json();
+            const gptToolCall = gptData.choices?.[0]?.message?.tool_calls?.[0];
+            const gptDateStr = gptToolCall ? JSON.parse(gptToolCall.function.arguments).date : null;
+            
+            if (gptDateStr && gptDateStr !== 'Date not found') {
+              eventDates.push({ eventName: event.name, date: gptDateStr });
+              console.log('GPT-5 found date for', event.name, ':', gptDateStr);
+            } else {
+              eventDates.push({ eventName: event.name, date: null });
+              console.log('GPT-5 also could not find date for', event.name);
+            }
+          } else {
+            eventDates.push({ eventName: event.name, date: null });
+            console.log('GPT-5 request failed for', event.name);
+          }
+        } else {
+          eventDates.push({ eventName: event.name, date: dateStr });
+          console.log('Google Search found date for', event.name, ':', dateStr);
+        }
 
         // Add delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 500));
