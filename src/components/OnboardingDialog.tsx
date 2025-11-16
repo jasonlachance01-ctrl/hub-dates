@@ -1,36 +1,28 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { toast } from "sonner";
-
 interface OnboardingDialogProps {
   open: boolean;
   onClose: () => void;
   onConnect: () => void;
 }
-
-const OnboardingDialog = ({ open, onClose, onConnect }: OnboardingDialogProps) => {
+const OnboardingDialog = ({
+  open,
+  onClose,
+  onConnect
+}: OnboardingDialogProps) => {
   const handleConnect = () => {
     // Simulate iOS calendar connection
     // In a real app, this would trigger iOS calendar API
     toast.success("Calendar connected successfully!");
     onConnect();
   };
-
   const handleSkip = () => {
     toast.info("You can connect your calendar later from settings");
     onClose();
   };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
+  return <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
@@ -47,14 +39,12 @@ const OnboardingDialog = ({ open, onClose, onConnect }: OnboardingDialogProps) =
           <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
             <p className="text-sm text-muted-foreground flex-1">
-              Sync academic calendars instantly
+              Sync your selected event dates to your calendar instantly!
             </p>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-            <p className="text-sm text-muted-foreground flex-1">
-              Get notifications for upcoming events
-            </p>
+            <p className="text-sm text-muted-foreground flex-1">App badge notifications immediately inform you of updates to your feed events!                                                                                                              </p>
           </div>
           <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
@@ -73,8 +63,6 @@ const OnboardingDialog = ({ open, onClose, onConnect }: OnboardingDialogProps) =
           </Button>
         </DialogFooter>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
-
 export default OnboardingDialog;
