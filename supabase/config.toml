@@ -1,1 +1,7 @@
 project_id = "wilulupprzprppcosyno"
+
+[functions.search-suggestions]
+verify_jwt = false
+
+[functions.fetch-event-dates]
+verify_jwt = false

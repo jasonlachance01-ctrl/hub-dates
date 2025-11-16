@@ -97,19 +97,62 @@ const SearchBar = ({ onAdd }: SearchBarProps) => {
     setShowEventDialog(true);
   };
 
-  const handleEventSelection = (selectedEvents: EventType[]) => {
-    const newOrg: Organization = {
-      id: Date.now().toString(),
-      name: pendingOrgName,
-      url: searchQuery.includes(".") ? searchQuery : undefined,
-      events: selectedEvents,
-    };
-
-    onAdd(newOrg);
-    setSearchQuery("");
-    setSuggestions([]);
+  const handleEventSelection = async (selectedEvents: EventType[]) => {
     setShowEventDialog(false);
-    toast.success(`${pendingOrgName} added to your feed`);
+    
+    // Show loading toast
+    const loadingToast = toast.loading(`Fetching dates for ${pendingOrgName}...`);
+
+    try {
+      // Fetch dates for the selected events
+      const { data, error } = await supabase.functions.invoke("fetch-event-dates", {
+        body: {
+          organizationName: pendingOrgName,
+          events: selectedEvents.map(e => ({ id: e.id, name: e.name }))
+        },
+      });
+
+      if (error) throw error;
+
+      // Merge the dates with the selected events
+      const eventsWithDates = selectedEvents.map(event => {
+        const eventDate = data.eventDates?.find((ed: any) => ed.eventName === event.name);
+        return {
+          ...event,
+          date: eventDate?.date || undefined
+        };
+      });
+
+      const newOrg: Organization = {
+        id: Date.now().toString(),
+        name: pendingOrgName,
+        url: searchQuery.includes(".") ? searchQuery : undefined,
+        events: eventsWithDates,
+      };
+
+      onAdd(newOrg);
+      setSearchQuery("");
+      setSuggestions([]);
+      
+      toast.dismiss(loadingToast);
+      toast.success(`${pendingOrgName} added to your feed`);
+    } catch (error) {
+      console.error("Error fetching event dates:", error);
+      toast.dismiss(loadingToast);
+      
+      // Add without dates as fallback
+      const newOrg: Organization = {
+        id: Date.now().toString(),
+        name: pendingOrgName,
+        url: searchQuery.includes(".") ? searchQuery : undefined,
+        events: selectedEvents,
+      };
+
+      onAdd(newOrg);
+      setSearchQuery("");
+      setSuggestions([]);
+      toast.warning(`${pendingOrgName} added, but couldn't fetch all dates`);
+    }
   };
 
   return (
