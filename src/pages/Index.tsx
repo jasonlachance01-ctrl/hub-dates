@@ -32,8 +32,10 @@ const Index = () => {
       {/* Hero Section */}
       <section className="flex-shrink-0 px-4 py-8">
         <div className="max-w-md mx-auto text-center space-y-6">
-          <h2 className="font-bold leading-tight text-6xl text-neutral-700">Subscribe to all of Your Events<span className="text-4xl italic font-bold text-primary">in one place</span>
-          </h2>
+          <div>
+            <h2 className="font-bold leading-tight text-6xl text-neutral-700">Subscribe to all of Your Events</h2>
+            <p className="font-bold leading-tight text-6xl italic text-primary">In One Place</p>
+          </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Enter the name or URL of any school, organization, or team to add it to your feed and select the important events to import into your own calendar. Be the first to know with notifications of updates or new additions to any of your feed calendars. Allow notifications from this app in your{" "}
             <a href="app-settings:notification_id=com.calendarflow" className="text-primary underline hover:text-primary-hover" onClick={e => {
