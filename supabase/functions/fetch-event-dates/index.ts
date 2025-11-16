@@ -39,12 +39,16 @@ serve(async (req) => {
     }
 
     const eventDates: EventDate[] = [];
+    
+    // Get current year and next year for date range
+    const currentYear = new Date().getFullYear();
+    const nextYear = currentYear + 1;
 
     // Fetch dates for each event
     for (const event of events) {
       try {
-        // Comprehensive search query to find the date
-        const query = `${organizationName} ${event.name} 2025 date when schedule`;
+        // Comprehensive search query to find the date with year range
+        const query = `What date is ${organizationName} ${event.name} ${currentYear}-${nextYear}`;
         console.log('Search Query:', query);
 
         // METHOD 1: Try Google Search API first
@@ -113,15 +117,17 @@ serve(async (req) => {
 Search Results:
 ${searchContext}
 
-TASK: Find the specific date for this event in 2025 or later.
+TASK: Find the specific date for this event in ${currentYear}-${nextYear}.
 
 IMPORTANT:
 - Look carefully through ALL the search results
 - Pay special attention to any AI Overview or Answer Box content
-- Look for phrases like "Winter Break is from December 22, 2025" or "Spring Break: March 15-23, 2025"
-- If you find a date range, use the START date
-- Return ONLY the date in this exact format: "Month Day, Year" (example: "December 22, 2025")
-- If you cannot find a clear date, respond with exactly: "NOT_FOUND"
+- Look for phrases like "Winter Break is from December 22, 2025 to January 2, 2026" or "Spring Break: March 15-23, 2026"
+- If you find a date range (like "Dec 22, 2025 to Jan 2, 2026"), use the LATER/END date (Jan 2, 2026)
+- If you find multiple dates for different years, use ONLY the LATER year (${nextYear} over ${currentYear})
+- ONLY return dates in ${currentYear} or later - ignore any past dates
+- Return ONLY the date in this exact format: "Month Day, Year" (example: "January 2, 2026")
+- If you cannot find a clear future date, respond with exactly: "NOT_FOUND"
 
 Your response (just the date or NOT_FOUND):`
                   }
@@ -164,10 +170,13 @@ Your response (just the date or NOT_FOUND):`
             messages: [
               {
                 role: 'user',
-                content: `What is the exact date of "${event.name}" for ${organizationName} in 2025?
+                content: `What is the exact date of "${event.name}" for ${organizationName} in ${currentYear}-${nextYear}?
 
-Respond with ONLY the date in "Month Day, Year" format (e.g., "April 20, 2025").
-If you don't know the exact date, respond with exactly "NOT_FOUND".
+IMPORTANT:
+- If there are multiple dates (e.g., one in ${currentYear} and one in ${nextYear}), provide ONLY the LATER date (${nextYear})
+- If there is a date range, provide the LATER/END date
+- Respond with ONLY the date in "Month Day, Year" format (e.g., "April 20, 2026")
+- If you don't know the exact date, respond with exactly "NOT_FOUND"
 
 Date:`
               }
