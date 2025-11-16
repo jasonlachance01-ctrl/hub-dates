@@ -41,7 +41,7 @@ const IconPreview = () => {
       id: 6,
       name: "Checkmark",
       description: "Clean checkmark on blue-purple gradient",
-      path: "/icon-option-6.png",
+      path: "/icon-option-6.png?v=2",
     },
     {
       id: 7,
