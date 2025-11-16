@@ -64,7 +64,7 @@ const OnboardingDialog = ({
 
         <DialogFooter className="flex-col sm:flex-col gap-2">
           <Button onClick={handleConnect} className="w-full text-sm sm:text-base">
-            Connect iOS Calendar
+            Connect Apple/iOS Calendar
           </Button>
         </DialogFooter>
       </DialogContent>
