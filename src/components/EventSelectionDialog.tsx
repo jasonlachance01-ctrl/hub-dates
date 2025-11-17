@@ -9,6 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EventType, DEFAULT_EVENT_TYPES } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +36,7 @@ const EventSelectionDialog = ({
 }: EventSelectionDialogProps) => {
   const [events, setEvents] = useState<EventType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [athleticsSchedule, setAthleticsSchedule] = useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -119,7 +127,7 @@ const EventSelectionDialog = ({
         <DialogHeader>
           <DialogTitle className="text-xl">{organizationName}</DialogTitle>
           <DialogDescription>
-            Select the events you want to track for this organization
+            Select the events you want to track for this organization. Only future dates will be shown.
           </DialogDescription>
         </DialogHeader>
 
@@ -142,6 +150,24 @@ const EventSelectionDialog = ({
               />
             </div>
           ))}
+
+          <div className="p-3 rounded-lg border bg-card">
+            <label className="text-sm font-medium block mb-2">
+              Athletics Schedule
+            </label>
+            <Select value={athleticsSchedule} onValueChange={setAthleticsSchedule}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a sport" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="football">Football</SelectItem>
+                <SelectItem value="mens-soccer">Men's Soccer</SelectItem>
+                <SelectItem value="womens-soccer">Women's Soccer</SelectItem>
+                <SelectItem value="mens-basketball">Men's Basketball</SelectItem>
+                <SelectItem value="womens-basketball">Women's Basketball</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
