@@ -165,7 +165,7 @@ serve(async (req) => {
                       
                       if (dateMatch) {
                         eventDates.push({ eventName, date: dateMatch[0] });
-                        console.log('✅ SUCCESS:', dateMatch[0]);
+                        console.log('✅ SUCCESS via Google Search:', dateMatch[0], 'from', googleSearchUrl);
                         dateFound = true;
                       }
                   }
@@ -267,7 +267,7 @@ serve(async (req) => {
                             
                             if (dateMatch) {
                               eventDates.push({ eventName, date: dateMatch[0] });
-                              console.log('✅ SUCCESS via PDF:', dateMatch[0]);
+                              console.log('✅ SUCCESS via PDF:', dateMatch[0], 'from', item.link);
                               dateFound = true;
                               break;
                             }
@@ -365,7 +365,7 @@ serve(async (req) => {
                                 
                                 if (dateMatch) {
                                   eventDates.push({ eventName, date: dateMatch[0] });
-                                  console.log('✅ SUCCESS via HTML:', dateMatch[0]);
+                                  console.log('✅ SUCCESS via HTML:', dateMatch[0], 'from', item.link);
                                   dateFound = true;
                                   break;
                                 }
@@ -399,11 +399,16 @@ serve(async (req) => {
                 const searchData = await searchResponse.json();
                 
                 if (searchData.items && searchData.items.length > 0) {
-                  // Combine snippets from top 3 results
+                  // Combine snippets from top 3 results and track URLs
                   const snippets = searchData.items
                     .map((item: any) => item.snippet)
                     .filter((s: string) => s)
                     .join('\n\n');
+                  
+                  const sourceUrls = searchData.items
+                    .map((item: any) => item.link)
+                    .filter((url: string) => url)
+                    .join(', ');
                   
                   console.log('📄 Google API snippets, length:', snippets.length);
                   
@@ -442,7 +447,7 @@ serve(async (req) => {
                             
                             if (dateMatch) {
                               eventDates.push({ eventName, date: dateMatch[0] });
-                              console.log('✅ SUCCESS via snippets:', dateMatch[0]);
+                              console.log('✅ SUCCESS via API snippets:', dateMatch[0], 'from', sourceUrls);
                               dateFound = true;
                             }
                     }
