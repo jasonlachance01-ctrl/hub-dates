@@ -59,7 +59,7 @@ serve(async (req) => {
           const pageResponse = await fetch(googleSearchUrl, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
               'Accept-Language': 'en-US,en;q=0.9',
               'Accept-Encoding': 'gzip, deflate, br',
               'Connection': 'keep-alive',
@@ -67,13 +67,24 @@ serve(async (req) => {
               'Sec-Fetch-Dest': 'document',
               'Sec-Fetch-Mode': 'navigate',
               'Sec-Fetch-Site': 'none',
-              'Cache-Control': 'max-age=0'
+              'Sec-Fetch-User': '?1',
+              'Cache-Control': 'max-age=0',
+              'DNT': '1',
+              'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+              'Sec-Ch-Ua-Mobile': '?0',
+              'Sec-Ch-Ua-Platform': '"macOS"'
             }
           });
           
           if (pageResponse.ok) {
             const html = await pageResponse.text();
-            console.log('✓ Successfully fetched Google Search page, length:', html.length);
+            const htmlLength = html.length;
+            console.log('✓ Successfully fetched Google Search page, length:', htmlLength);
+            
+            // Check if we got a redirect/block page
+            if (htmlLength < 5000 || html.includes('redirected within a few seconds') || html.includes('unusual traffic')) {
+              console.log('⚠️ Google blocked request or returned redirect page, skipping to API fallback');
+            } else {
             
             // Extract comprehensive AI Overview content
             let aiOverviewText = '';
@@ -223,6 +234,7 @@ EXTRACTED DATE:`
             } else {
               console.log('⚠️ No AI Overview content found in HTML');
             }
+            } // End of else block for Google unblocked check
           } else {
             console.error('❌ Failed to fetch Google page, status:', pageResponse.status);
           }
@@ -306,6 +318,79 @@ Date:`
         }
 
         // FALLBACK METHOD 3: Gemini direct knowledge
+        console.log('🧠 Trying Gemini direct knowledge as final fallback...');
+        
+        const directResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              {
+                role: 'user',
+                content: `What is the exact date of "${event.name}" for ${organizationName} in ${currentYear}-${nextYear}?
+
+IMPORTANT:
+- Provide ONLY the LATER date if multiple years exist (prefer ${nextYear})
+- Range format: "Month Day, Year - Month Day, Year"
+- Single format: "Month Day, Year"
+- If unknown, respond with exactly "NOT_FOUND"
+
+Date:`
+              }
+            ],
+            max_tokens: 50
+          }),
+        });
+
+        if (directResponse.ok) {
+          const directData = await directResponse.json();
+          const answer = directData.choices?.[0]?.message?.content?.trim() || '';
+          
+          console.log('🤖 Gemini direct knowledge:', answer);
+          
+          const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+          const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+          const dateMatch = answer.match(dateRangePattern) || answer.match(singleDatePattern);
+          
+          if (dateMatch) {
+            eventDates.push({ eventName: event.name, date: dateMatch[0] });
+            console.log('✅ SUCCESS via direct knowledge for', event.name, ':', dateMatch[0]);
+          } else {
+            eventDates.push({ eventName: event.name, date: null });
+            console.log('❌ NO DATE FOUND for', event.name);
+          }
+        } else {
+          const errorText = await directResponse.text();
+          console.error('❌ Gemini request failed for', event.name, ':', errorText);
+          eventDates.push({ eventName: event.name, date: null });
+        }
+
+        // Rate limit protection
+        await new Promise(resolve => setTimeout(resolve, 1200));
+
+      } catch (error) {
+        console.error('Error fetching date for', event.name, ':', error);
+        eventDates.push({ eventName: event.name, date: null });
+      }
+    }
+
+    return new Response(JSON.stringify({ eventDates }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in fetch-event-dates function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
         
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
