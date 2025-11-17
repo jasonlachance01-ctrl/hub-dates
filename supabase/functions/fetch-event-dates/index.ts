@@ -257,6 +257,8 @@ serve(async (req) => {
                 
                 if (searchData.items && searchData.items.length > 0) {
                   // Check for PDF files in results - filter by domain relevance
+                  // Only try the FIRST relevant PDF to save CPU time
+                  let pdfProcessedCount = 0;
                   for (const item of searchData.items) {
                     if (Date.now() - startTime > MAX_PROCESSING_TIME) {
                       break;
@@ -271,6 +273,7 @@ serve(async (req) => {
                                   item.mime?.includes('pdf');
                     
                     if (isPDF) {
+                      pdfProcessedCount++;
                       console.log('📄 Found PDF:', item.link);
                       
                       try {
@@ -347,6 +350,11 @@ serve(async (req) => {
                       } catch (e) {
                         console.log('⚠️ PDF parsing failed:', (e as Error).message || 'Unknown error');
                       }
+                      
+                      // Only try ONE PDF per query to save CPU time
+                      if (pdfProcessedCount >= 1) {
+                        break;
+                      }
                     }
                   }
                 }
@@ -370,7 +378,8 @@ serve(async (req) => {
                 const searchData = await searchResponse.json();
                 
                 if (searchData.items && searchData.items.length > 0) {
-                  // Try fetching and parsing the top non-PDF result - filter by domain relevance
+                  // Try fetching ONLY the first relevant non-PDF result to save CPU time
+                  let processedCount = 0;
                   for (const item of searchData.items) {
                     if (Date.now() - startTime > MAX_PROCESSING_TIME) {
                       break;
@@ -385,6 +394,7 @@ serve(async (req) => {
                                   item.mime?.includes('pdf');
                     
                     if (!isPDF) {
+                      processedCount++;
                       try {
                         console.log('🌐 Fetching webpage:', item.link);
                         const pageResponse = await fetchWithTimeout(item.link, {
@@ -449,8 +459,13 @@ serve(async (req) => {
                             }
                           }
                         }
-                      } catch (e) {
+                        } catch (e) {
                         console.log('⚠️ Webpage parsing failed:', (e as Error).message || 'Unknown error');
+                      }
+                      
+                      // Only try ONE webpage per query to save CPU time
+                      if (processedCount >= 1) {
+                        break;
                       }
                     }
                   }
