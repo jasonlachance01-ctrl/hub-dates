@@ -175,7 +175,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   return (
     <>
-      <p className="text-sm text-muted-foreground mb-1 text-center">
+      <p className="text-sm text-muted-foreground mb-0.5 text-center">
         Include City Name for accurate results.
       </p>
       <div ref={searchRef} className="relative flex gap-2">
