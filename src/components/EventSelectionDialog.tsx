@@ -16,10 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { EventType, DEFAULT_EVENT_TYPES } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 
 interface EventSelectionDialogProps {
   open: boolean;
@@ -36,7 +37,15 @@ const EventSelectionDialog = ({
 }: EventSelectionDialogProps) => {
   const [events, setEvents] = useState<EventType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [athleticsSchedule, setAthleticsSchedule] = useState<string>("");
+  const [athleticsSchedule, setAthleticsSchedule] = useState<string[]>([]);
+
+  const ATHLETICS_OPTIONS = [
+    "Football",
+    "Men's Soccer",
+    "Women's Soccer",
+    "Men's Basketball",
+    "Women's Basketball",
+  ];
 
   useEffect(() => {
     if (open) {
@@ -48,8 +57,23 @@ const EventSelectionDialog = ({
           addedToCalendar: false,
         }))
       );
+      setAthleticsSchedule([]);
     }
   }, [open]);
+
+  const handleAddAthleticsSchedule = (value: string) => {
+    if (!athleticsSchedule.includes(value)) {
+      setAthleticsSchedule([...athleticsSchedule, value]);
+    }
+  };
+
+  const handleRemoveAthleticsSchedule = (value: string) => {
+    setAthleticsSchedule(athleticsSchedule.filter(s => s !== value));
+  };
+
+  const handleClearAllAthletics = () => {
+    setAthleticsSchedule([]);
+  };
 
   const handleToggle = (eventId: string) => {
     setEvents((prev) =>
@@ -152,21 +176,56 @@ const EventSelectionDialog = ({
           ))}
 
           <div className="p-3 rounded-lg border bg-card">
-            <label className="text-sm font-medium block mb-2">
-              Athletics Schedule
-            </label>
-            <Select value={athleticsSchedule} onValueChange={setAthleticsSchedule}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a sport" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="football">Football</SelectItem>
-                <SelectItem value="mens-soccer">Men's Soccer</SelectItem>
-                <SelectItem value="womens-soccer">Women's Soccer</SelectItem>
-                <SelectItem value="mens-basketball">Men's Basketball</SelectItem>
-                <SelectItem value="womens-basketball">Women's Basketball</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Athletics Schedule</label>
+                {athleticsSchedule.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearAllAthletics}
+                    className="h-auto py-0 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              <Select onValueChange={handleAddAthleticsSchedule}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select sports" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {ATHLETICS_OPTIONS.map((option) => (
+                    <SelectItem 
+                      key={option} 
+                      value={option}
+                      disabled={athleticsSchedule.includes(option)}
+                    >
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {athleticsSchedule.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {athleticsSchedule.map((sport) => (
+                    <Badge
+                      key={sport}
+                      variant="secondary"
+                      className="gap-1 pr-1"
+                    >
+                      {sport}
+                      <button
+                        onClick={() => handleRemoveAthleticsSchedule(sport)}
+                        className="ml-1 hover:bg-background/20 rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
