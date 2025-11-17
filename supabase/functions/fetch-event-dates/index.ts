@@ -45,13 +45,26 @@ serve(async (req) => {
 
     for (const event of events) {
       try {
-        // Try multiple query variations for better results
-        const queries = [
-          `${organizationName} ${event.name} date ${currentYear} ${nextYear}`,
-          `${organizationName} ${event.name} ${nextYear}`,
-          `${organizationName} calendar ${event.name} ${nextYear}`,
-          `site:${organizationName.toLowerCase().replace(/\s+/g, '')}.com ${event.name} ${nextYear}`
-        ];
+        // Map event names to include alternative search terms
+        const eventSearchTerms = event.name === "Graduation" 
+          ? ["Graduation", "Commencement"]
+          : [event.name];
+        
+        // Create a description for AI prompts
+        const eventTermDescription = eventSearchTerms.join(" or ");
+        
+        // Try multiple query variations for better results, including PDF searches
+        const queries: string[] = [];
+        for (const term of eventSearchTerms) {
+          queries.push(
+            // Prioritize academic calendar PDFs
+            `${organizationName} academic calendar ${term} ${nextYear} filetype:pdf`,
+            `${organizationName} ${term} date ${currentYear} ${nextYear}`,
+            `${organizationName} ${term} ${nextYear}`,
+            `${organizationName} calendar ${term} ${nextYear}`,
+            `site:${organizationName.toLowerCase().replace(/\s+/g, '')}.com ${term} ${nextYear}`
+          );
+        }
         
         let dateFound = false;
         let queryIndex = 0;
@@ -107,11 +120,11 @@ serve(async (req) => {
                       messages: [
                         {
                           role: 'system',
-                          content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
+                          content: `You are a date extractor. Look for the ${eventTermDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
                         },
                         {
                           role: 'user',
-                          content: `Find the ${event.name} date in this text:\n\n${aiOverviewText}`
+                          content: `Find the ${eventTermDescription} date in this text:\n\n${aiOverviewText}`
                         }
                       ],
                       max_tokens: 50
@@ -198,11 +211,11 @@ serve(async (req) => {
                             messages: [
                             {
                               role: 'system',
-                              content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
+                              content: `You are a date extractor. Look for the ${eventTermDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
                             },
                               {
                                 role: 'user',
-                                content: `Find the ${event.name} date from ${organizationName}'s webpage:\n\n${dateContext}`
+                                content: `Find the ${eventTermDescription} date from ${organizationName}'s webpage:\n\n${dateContext}`
                               }
                             ],
                             max_tokens: 50
@@ -272,11 +285,11 @@ serve(async (req) => {
                   messages: [
                     {
                       role: 'system',
-                      content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
+                      content: `You are a date extractor. Look for the ${eventTermDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
                     },
                     {
                       role: 'user',
-                      content: `Search results:\n\n${searchContext}\n\nWhat is the ${event.name} date?`
+                      content: `Search results:\n\n${searchContext}\n\nWhat is the ${eventTermDescription} date?`
                     }
                   ],
                   max_tokens: 50
@@ -352,7 +365,7 @@ serve(async (req) => {
               messages: [
                 {
                   role: 'user',
-                  content: `What is the date of ${event.name} for ${organizationName} in ${currentYear} or ${nextYear}? Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if unknown.`
+                  content: `What is the date of ${eventTermDescription} for ${organizationName} in ${currentYear} or ${nextYear}? Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if unknown.`
                 }
               ],
               max_tokens: 50
