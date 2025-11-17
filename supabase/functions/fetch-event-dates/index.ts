@@ -183,7 +183,7 @@ serve(async (req) => {
           // METHOD 2A: Try PDF parsing if URL points to a PDF
           if (!dateFound) {
             try {
-              const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
+              const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=2`;
               const searchResponse = await fetchWithTimeout(searchUrl, {}, 5000);
               
               if (searchResponse.ok) {
@@ -292,7 +292,7 @@ serve(async (req) => {
           // METHOD 2B: Try full webpage HTML parsing
           if (!dateFound) {
             try {
-              const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=3`;
+              const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=2`;
               const searchResponse = await fetchWithTimeout(searchUrl, {}, 5000);
               
               if (searchResponse.ok) {
