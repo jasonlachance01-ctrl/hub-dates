@@ -142,16 +142,16 @@ serve(async (req) => {
         const eventTermDescription = eventSearchTerms.join(" or ");
         
         // Build comprehensive search queries with .edu prioritization and academic keywords
+        // Limit to 3 queries per event to stay within compute limits
         const queries: string[] = [];
         for (const term of eventSearchTerms) {
-          // Prioritize .edu sites with academic calendar keywords
           queries.push(
+            // Primary: .edu sites with academic calendar keywords
             `${organizationName} academic calendar ${term} ${nextYear} site:*.edu`,
+            // Secondary: .edu sites with date keywords
             `${organizationName} ${term} date ${currentYear} ${nextYear} site:*.edu`,
-            `${organizationName} calendar ${term} ${nextYear} site:*.edu`,
-            // Fallback to broader searches if .edu doesn't yield results
+            // Fallback: broader search if .edu doesn't yield results
             `${organizationName} academic calendar ${term} ${nextYear}`,
-            `${organizationName} ${term} date ${currentYear} ${nextYear}`,
           );
         }
         
