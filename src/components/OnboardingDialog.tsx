@@ -24,7 +24,7 @@ const OnboardingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm mx-4 sm:mx-0">
+      <DialogContent className="w-[90vw] max-w-sm mx-auto sm:w-full">
         <DialogHeader className="space-y-3">
           <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center">
             <Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
