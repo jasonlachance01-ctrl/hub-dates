@@ -13,11 +13,19 @@ export function normalizeDateDisplay(dateString: string | null | undefined): str
   }
 
   try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+
     // Check if it's a date range (e.g., "3/13/2026 to 3/22/2026")
     const rangeMatch = dateString.match(/(\d{1,2}\/\d{1,2}\/\d{4})\s+to\s+(\d{1,2}\/\d{1,2}\/\d{4})/i);
     if (rangeMatch) {
       const startDate = parse(rangeMatch[1], "M/d/yyyy", new Date());
       const endDate = parse(rangeMatch[2], "M/d/yyyy", new Date());
+      
+      // Don't show past date ranges
+      if (endDate < today) {
+        return "Date not available";
+      }
       
       // If same month and year, show as "March 13-22, 2026"
       if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
@@ -37,6 +45,12 @@ export function normalizeDateDisplay(dateString: string | null | undefined): str
     const numericalMatch = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (numericalMatch) {
       const date = parse(dateString, "M/d/yyyy", new Date());
+      
+      // Don't show past dates
+      if (date < today) {
+        return "Date not available";
+      }
+      
       return format(date, "MMMM d, yyyy");
     }
 
@@ -48,6 +62,12 @@ export function normalizeDateDisplay(dateString: string | null | undefined): str
       // Try to parse and reformat for consistency
       try {
         const date = parse(cleaned, "MMMM d, yyyy", new Date());
+        
+        // Don't show past dates
+        if (date < today) {
+          return "Date not available";
+        }
+        
         return format(date, "MMMM d, yyyy");
       } catch {
         // If parsing fails, return the original cleaned string
