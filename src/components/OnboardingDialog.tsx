@@ -26,7 +26,7 @@ const OnboardingDialog = ({
       <DialogContent className="w-[90vw] max-w-sm mx-auto sm:w-full">
         <DialogHeader className="space-y-3">
           <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
-            <img src="/icon-option-1.png" alt="App Icon" className="w-full h-full rounded-2xl" />
+            <img src="/icon-option-6-blue.png" alt="App Icon" className="w-full h-full rounded-2xl" />
           </div>
           <DialogTitle className="text-center text-lg sm:text-xl">Connect Your Calendar</DialogTitle>
           <DialogDescription className="text-center text-sm sm:text-base px-2">
