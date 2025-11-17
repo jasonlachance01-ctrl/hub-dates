@@ -48,48 +48,96 @@ serve(async (req) => {
     for (const event of events) {
       try {
         // Comprehensive search query to find the date with year range
-        const query = `What date is ${organizationName} ${event.name} ${currentYear}-${nextYear}`;
+        const query = `${organizationName} ${event.name} date ${currentYear} ${nextYear}`;
         console.log('Search Query:', query);
 
-        // METHOD 1: Scrape actual Google Search page for AI Overview
-        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-        console.log('Fetching Google Search page for AI Overview...');
+        // PRIORITY METHOD: Extract AI Overview from Google Search
+        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&gl=us&hl=en`;
+        console.log('🔍 Fetching Google Search page for AI Overview...');
         
         try {
           const pageResponse = await fetch(googleSearchUrl, {
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none',
+              'Cache-Control': 'max-age=0'
             }
           });
           
           if (pageResponse.ok) {
             const html = await pageResponse.text();
+            console.log('✓ Successfully fetched Google Search page, length:', html.length);
             
-            // Extract AI Overview content - it's typically in a specific div
-            // Google's AI Overview appears in various possible structures
-            let aiOverview = '';
+            // Extract comprehensive AI Overview content
+            let aiOverviewText = '';
             
-            // Try to find AI Overview section (it has various class names)
-            const aiOverviewPatterns = [
-              /<div[^>]*class="[^"]*AyB02e[^"]*"[^>]*>([\s\S]*?)<\/div>/i,  // Common AI Overview class
-              /<div[^>]*data-attrid="AIOverview"[^>]*>([\s\S]*?)<\/div>/i,
-              /<div[^>]*class="[^"]*kno-rdesc[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+            // Multiple extraction strategies for AI Overview
+            // Strategy 1: Look for AI Overview container divs
+            const aiContainerPatterns = [
+              // Modern AI Overview (2024+)
+              /<div[^>]*data-attrid="wa:\/description"[^>]*>([\s\S]*?)<\/div>/gi,
+              /<div[^>]*class="[^"]*hgKElc[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+              /<div[^>]*class="[^"]*kno-rdesc[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+              /<div[^>]*class="[^"]*mod[^"]*"[^>]*data-md="[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+              // Featured snippet patterns
+              /<div[^>]*class="[^"]*IZ6rdc[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+              /<span[^>]*class="[^"]*hgKElc[^"]*"[^>]*>([\s\S]*?)<\/span>/gi,
             ];
             
-            for (const pattern of aiOverviewPatterns) {
-              const match = html.match(pattern);
-              if (match && match[1]) {
-                // Clean HTML tags but preserve text
-                aiOverview = match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-                if (aiOverview.length > 50) { // Only use if substantial content
-                  console.log('Found AI Overview:', aiOverview.substring(0, 200));
-                  break;
+            for (const pattern of aiContainerPatterns) {
+              const matches = html.matchAll(pattern);
+              for (const match of matches) {
+                if (match && match[1]) {
+                  const extracted = match[1]
+                    .replace(/<script[\s\S]*?<\/script>/gi, '')
+                    .replace(/<style[\s\S]*?<\/style>/gi, '')
+                    .replace(/<[^>]+>/g, ' ')
+                    .replace(/&nbsp;/g, ' ')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                  
+                  if (extracted.length > 50 && extracted.length < 5000) {
+                    aiOverviewText += extracted + '\n\n';
+                  }
                 }
               }
             }
             
-            // If we found AI Overview, use it with Gemini
-            if (aiOverview) {
+            // Strategy 2: Look for any content with date keywords
+            const dateKeywordRegex = /(<div[^>]*>[\s\S]*?(?:January|February|March|April|May|June|July|August|September|October|November|December)[^<]*\d{1,2}[^<]*\d{4}[\s\S]*?<\/div>)/gi;
+            const dateMatches = html.matchAll(dateKeywordRegex);
+            
+            for (const match of dateMatches) {
+              if (match && match[1]) {
+                const extracted = match[1]
+                  .replace(/<script[\s\S]*?<\/script>/gi, '')
+                  .replace(/<style[\s\S]*?<\/style>/gi, '')
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                
+                if (extracted.length > 20 && extracted.length < 1000) {
+                  aiOverviewText += extracted + '\n';
+                }
+              }
+            }
+            
+            if (aiOverviewText) {
+              console.log('📄 Extracted AI Overview content, length:', aiOverviewText.length);
+              console.log('📝 Preview:', aiOverviewText.substring(0, 300));
+              
+              // Use Gemini to extract date from AI Overview
               const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -101,20 +149,29 @@ serve(async (req) => {
                   messages: [
                     {
                       role: 'user',
-                      content: `Extract the exact date for "${event.name}" for ${organizationName} from this Google AI Overview:
+                      content: `You are a date extraction expert analyzing Google Search AI Overview content.
 
-${aiOverview}
+EVENT: ${event.name}
+ORGANIZATION: ${organizationName}
+TARGET YEARS: ${currentYear}-${nextYear}
 
-INSTRUCTIONS:
-1. Look for dates in ${currentYear} or ${nextYear}
-2. If you find a date range, return the FULL range: "Month Day, Year - Month Day, Year"
-3. Return ONLY the date in format "Month Day, Year" or range format
-4. If NO date found, respond with exactly: "NOT_FOUND"
+CONTENT TO ANALYZE:
+${aiOverviewText}
+
+CRITICAL EXTRACTION RULES:
+1. Extract ONLY dates for ${currentYear} or ${nextYear}
+2. If there's a date range (e.g., "May 16-17, 2025"), return it as: "May 16, 2025 - May 17, 2025"
+3. If there's a single date, return it as: "Month Day, Year"
+4. PRIORITIZE dates that explicitly mention "${event.name}"
+5. If multiple dates found, choose the LATEST one in ${nextYear}
+6. If NO valid date found for ${currentYear}/${nextYear}, respond with exactly: "NOT_FOUND"
+
+Return ONLY the date or "NOT_FOUND", nothing else.
 
 Date:`
                     }
                   ],
-                  max_tokens: 50
+                  max_tokens: 60
                 }),
               });
 
@@ -122,28 +179,109 @@ Date:`
                 const extractData = await extractResponse.json();
                 const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
                 
-                console.log('Gemini extracted from AI Overview:', extracted);
+                console.log('🤖 Gemini extracted from AI Overview:', extracted);
                 
-                const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
-                const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
-                const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
-                
-                if (dateMatch) {
-                  eventDates.push({ eventName: event.name, date: dateMatch[0] });
-                  console.log('✓ Found via AI Overview for', event.name, ':', dateMatch[0]);
-                  await new Promise(resolve => setTimeout(resolve, 700));
-                  continue;
+                if (extracted !== 'NOT_FOUND' && extracted.length > 0) {
+                  const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                  const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                  const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
+                  
+                  if (dateMatch) {
+                    eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                    console.log('✅ SUCCESS via AI Overview for', event.name, ':', dateMatch[0]);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    continue;
+                  }
                 }
+              } else {
+                console.error('❌ Gemini API error:', await extractResponse.text());
+              }
+            } else {
+              console.log('⚠️ No AI Overview content found in HTML');
+            }
+          } else {
+            console.error('❌ Failed to fetch Google page, status:', pageResponse.status);
+          }
+        } catch (scrapeError) {
+          console.error('❌ Error scraping Google page:', scrapeError);
+        }
+
+
+        // FALLBACK METHOD 2: Google Search API
+        console.log('📡 Trying Google Search API as fallback...');
+        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10`;
+        const searchResponse = await fetch(searchUrl);
+        
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          
+          if (searchData.items && searchData.items.length > 0) {
+            // Extract comprehensive search context
+            let searchContext = '';
+            
+            searchContext += searchData.items.slice(0, 10)
+              .map((item: any) => {
+                let itemText = `Title: ${item.title}\nURL: ${item.link}\n`;
+                if (item.snippet) itemText += `Snippet: ${item.snippet}\n`;
+                if (item.htmlSnippet) {
+                  const cleanHtml = item.htmlSnippet.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                  if (cleanHtml !== item.snippet) itemText += `Extended: ${cleanHtml}\n`;
+                }
+                return itemText;
+              })
+              .join('\n---\n\n');
+            
+            console.log('📄 Google API results, length:', searchContext.length);
+
+            const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${lovableApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'google/gemini-2.5-flash',
+                messages: [
+                  {
+                    role: 'user',
+                    content: `Extract date for "${event.name}" at ${organizationName}:
+
+${searchContext}
+
+Rules:
+- Only ${currentYear} or ${nextYear} dates
+- Range format: "Month Day, Year - Month Day, Year"
+- Single format: "Month Day, Year"
+- Return "NOT_FOUND" if no date found
+
+Date:`
+                  }
+                ],
+                max_tokens: 50
+              }),
+            });
+
+            if (extractResponse.ok) {
+              const extractData = await extractResponse.json();
+              const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
+              
+              console.log('🤖 Gemini from API results:', extracted);
+              
+              const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+              const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+              const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
+              
+              if (dateMatch) {
+                eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                console.log('✅ SUCCESS via API fallback for', event.name, ':', dateMatch[0]);
+                await new Promise(resolve => setTimeout(resolve, 700));
+                continue;
               }
             }
           }
-        } catch (scrapeError) {
-          console.log('Could not scrape Google page:', scrapeError);
         }
 
-        // METHOD 2: Try Google Search API as fallback
-        const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10`;
-        const searchResponse = await fetch(searchUrl);
+        // FALLBACK METHOD 3: Gemini direct knowledge
         
         if (searchResponse.ok) {
           const searchData = await searchResponse.json();
@@ -250,8 +388,8 @@ Extract the date now:`
           }
         }
 
-        // METHOD 2: If Google didn't work, ask Gemini directly with knowledge
-        console.log('Trying Gemini direct knowledge query...');
+        // FALLBACK METHOD 3: Gemini direct knowledge
+        console.log('🧠 Trying Gemini direct knowledge as final fallback...');
         
         const directResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
@@ -267,10 +405,10 @@ Extract the date now:`
                 content: `What is the exact date of "${event.name}" for ${organizationName} in ${currentYear}-${nextYear}?
 
 IMPORTANT:
-- If there are multiple dates (e.g., one in ${currentYear} and one in ${nextYear}), provide ONLY the LATER date (${nextYear})
-- If there is a date range, provide the FULL range in format "Month Day, Year - Month Day, Year"
-- Respond with the date or range in these formats: "Month Day, Year" or "Month Day, Year - Month Day, Year" (e.g., "March 21, 2026 - March 28, 2026")
-- If you don't know the exact date, respond with exactly "NOT_FOUND"
+- Provide ONLY the LATER date if multiple years exist (prefer ${nextYear})
+- Range format: "Month Day, Year - Month Day, Year"
+- Single format: "Month Day, Year"
+- If unknown, respond with exactly "NOT_FOUND"
 
 Date:`
               }
@@ -283,28 +421,27 @@ Date:`
           const directData = await directResponse.json();
           const answer = directData.choices?.[0]?.message?.content?.trim() || '';
           
-          console.log('Gemini knowledge answer:', answer);
+          console.log('🤖 Gemini direct knowledge:', answer);
           
-          // Extract date pattern from response (range or single date)
           const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
           const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
           const dateMatch = answer.match(dateRangePattern) || answer.match(singleDatePattern);
           
           if (dateMatch) {
             eventDates.push({ eventName: event.name, date: dateMatch[0] });
-            console.log('✓ Found via GPT-5 knowledge for', event.name, ':', dateMatch[0]);
+            console.log('✅ SUCCESS via direct knowledge for', event.name, ':', dateMatch[0]);
           } else {
             eventDates.push({ eventName: event.name, date: null });
-            console.log('✗ No date found for', event.name);
+            console.log('❌ NO DATE FOUND for', event.name);
           }
-          } else {
-            const errorText = await directResponse.text();
-            console.error('✗ Gemini request failed for', event.name, ':', errorText);
-            eventDates.push({ eventName: event.name, date: null });
-          }
+        } else {
+          const errorText = await directResponse.text();
+          console.error('❌ Gemini request failed for', event.name, ':', errorText);
+          eventDates.push({ eventName: event.name, date: null });
+        }
 
         // Rate limit protection
-        await new Promise(resolve => setTimeout(resolve, 900));
+        await new Promise(resolve => setTimeout(resolve, 1200));
 
       } catch (error) {
         console.error('Error fetching date for', event.name, ':', error);
