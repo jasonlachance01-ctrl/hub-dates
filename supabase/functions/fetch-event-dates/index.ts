@@ -133,9 +133,22 @@ serve(async (req) => {
               }
             }
             
+            // If no AI Overview found yet, try extracting ALL text with dates
+            if (!aiOverviewText || aiOverviewText.length < 100) {
+              console.log('⚠️ Limited AI Overview, extracting all date-containing text...');
+              
+              // Extract any paragraph or div with month names
+              const allDateText = html.match(/(January|February|March|April|May|June|July|August|September|October|November|December)[^<]{0,200}?\d{4}/gi);
+              if (allDateText && allDateText.length > 0) {
+                aiOverviewText = allDateText.join('\n\n');
+                console.log('📄 Extracted date-containing text, segments:', allDateText.length);
+              }
+            }
+            
             if (aiOverviewText) {
-              console.log('📄 Extracted AI Overview content, length:', aiOverviewText.length);
-              console.log('📝 Preview:', aiOverviewText.substring(0, 300));
+              console.log('📄 Final extracted content, length:', aiOverviewText.length);
+              console.log('📝 Full content preview (first 500 chars):', aiOverviewText.substring(0, 500));
+              console.log('📝 Full content preview (last 500 chars):', aiOverviewText.substring(Math.max(0, aiOverviewText.length - 500)));
               
               // Use Gemini to extract date from AI Overview
               const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -149,29 +162,29 @@ serve(async (req) => {
                   messages: [
                     {
                       role: 'user',
-                      content: `You are a date extraction expert analyzing Google Search AI Overview content.
+                      content: `You are analyzing Google Search content for event dates.
 
 EVENT: ${event.name}
 ORGANIZATION: ${organizationName}
-TARGET YEARS: ${currentYear}-${nextYear}
+TARGET YEARS: ${currentYear} or ${nextYear}
 
-CONTENT TO ANALYZE:
+CONTENT:
 ${aiOverviewText}
 
-CRITICAL EXTRACTION RULES:
-1. Extract ONLY dates for ${currentYear} or ${nextYear}
-2. If there's a date range (e.g., "May 16-17, 2025"), return it as: "May 16, 2025 - May 17, 2025"
-3. If there's a single date, return it as: "Month Day, Year"
-4. PRIORITIZE dates that explicitly mention "${event.name}"
-5. If multiple dates found, choose the LATEST one in ${nextYear}
-6. If NO valid date found for ${currentYear}/${nextYear}, respond with exactly: "NOT_FOUND"
+TASK: Extract the graduation/event date that appears in this content.
 
-Return ONLY the date or "NOT_FOUND", nothing else.
+STRICT RULES:
+1. Look ESPECIALLY at the FIRST sentence - graduation dates are often mentioned there
+2. ONLY extract dates for ${currentYear} or ${nextYear}
+3. Single date format: "Month Day, Year" (e.g., "May 17, 2025")
+4. Range format: "Month Day, Year - Month Day, Year" (e.g., "May 16, 2025 - May 17, 2025")
+5. If NO valid date found, return exactly: "NOT_FOUND"
+6. Return ONLY the date or "NOT_FOUND", nothing else
 
-Date:`
+EXTRACTED DATE:`
                     }
                   ],
-                  max_tokens: 60
+                  max_tokens: 70
                 }),
               });
 
@@ -181,10 +194,21 @@ Date:`
                 
                 console.log('🤖 Gemini extracted from AI Overview:', extracted);
                 
+                // Try to match dates in the response
                 if (extracted !== 'NOT_FOUND' && extracted.length > 0) {
                   const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
                   const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-                  const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
+                  let dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
+                  
+                  // If Gemini didn't extract properly, try direct regex on first 500 chars
+                  if (!dateMatch && aiOverviewText.length > 0) {
+                    console.log('⚠️ Gemini failed to extract, trying direct regex on first 500 chars...');
+                    const firstPart = aiOverviewText.substring(0, 500);
+                    dateMatch = firstPart.match(dateRangePattern) || firstPart.match(singleDatePattern);
+                    if (dateMatch) {
+                      console.log('✅ Found date via direct regex:', dateMatch[0]);
+                    }
+                  }
                   
                   if (dateMatch) {
                     eventDates.push({ eventName: event.name, date: dateMatch[0] });
