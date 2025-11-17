@@ -25,10 +25,8 @@ const Index = () => {
     setOrganizations(prev => prev.map(org => org.id === id ? updatedOrg : org));
   };
   const handleAddToCalendarClick = () => {
-    // Only show dialog if calendar not connected yet
-    if (!calendarConnected) {
-      setShowOnboarding(true);
-    }
+    // Always show onboarding dialog when adding to calendar
+    setShowOnboarding(true);
   };
   const handleCalendarConnect = () => {
     setCalendarConnected(true);
