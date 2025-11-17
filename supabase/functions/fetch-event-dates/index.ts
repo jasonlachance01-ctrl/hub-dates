@@ -134,26 +134,24 @@ serve(async (req) => {
         // event is a string (event name), not an object
         const eventName = typeof event === 'string' ? event : event.name;
         
-        // Map event names to include alternative search terms
-        const eventSearchTerms = eventName === "Graduation" 
-          ? ["Graduation", "Commencement"]
-          : [eventName];
+        // Map event names to include alternative search terms in the same query
+        const searchTerm = eventName === "Graduation" 
+          ? "Graduation OR Commencement"
+          : eventName;
         
-        const eventTermDescription = eventSearchTerms.join(" or ");
+        const eventDescription = eventName === "Graduation"
+          ? "Graduation or Commencement"
+          : eventName;
         
-        // Build comprehensive search queries with .edu prioritization and academic keywords
-        // Limit to 3 queries per event to stay within compute limits
-        const queries: string[] = [];
-        for (const term of eventSearchTerms) {
-          queries.push(
-            // Primary: .edu sites with academic calendar keywords
-            `${organizationName} academic calendar ${term} ${nextYear} site:*.edu`,
-            // Secondary: .edu sites with date keywords
-            `${organizationName} ${term} date ${currentYear} ${nextYear} site:*.edu`,
-            // Fallback: broader search if .edu doesn't yield results
-            `${organizationName} academic calendar ${term} ${nextYear}`,
-          );
-        }
+        // Build 3 queries with .edu prioritization and academic keywords
+        const queries: string[] = [
+          // Primary: .edu sites with academic calendar keywords
+          `${organizationName} academic calendar ${searchTerm} ${nextYear} site:*.edu`,
+          // Secondary: .edu sites with date keywords
+          `${organizationName} ${searchTerm} date ${currentYear} ${nextYear} site:*.edu`,
+          // Fallback: broader search if .edu doesn't yield results
+          `${organizationName} academic calendar ${searchTerm} ${nextYear}`,
+        ];
         
         let dateFound = false;
         let queryIndex = 0;
@@ -208,11 +206,11 @@ serve(async (req) => {
                       messages: [
                         {
                           role: 'system',
-                          content: `You are a date extractor. Look for the ${eventTermDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in format "Month Day, Year" (e.g., "May 16, 2026") or "M/D/YYYY" (e.g., "3/13/2026"). Return "NOT_FOUND" if not found.`
+                          content: `You are a date extractor. Look for the ${eventDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in format "Month Day, Year" (e.g., "May 16, 2026") or "M/D/YYYY" (e.g., "3/13/2026"). Return "NOT_FOUND" if not found.`
                         },
                         {
                           role: 'user',
-                          content: `Find the ${eventTermDescription} date:\n\n${aiOverviewText}`
+                          content: `Find the ${eventDescription} date:\n\n${aiOverviewText}`
                         }
                       ],
                       max_tokens: 50
@@ -307,14 +305,14 @@ serve(async (req) => {
                               messages: [
                                 {
                                   role: 'system',
-                                  content: `Extract the ${eventTermDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date in format "Month Day, Year" or "M/D/YYYY". Return "NOT_FOUND" if not found.`
+                                  content: `Extract the ${eventDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date in format "Month Day, Year" or "M/D/YYYY". Return "NOT_FOUND" if not found.`
                                 },
                                 {
                                   role: 'user',
                                   content: [
                                     {
                                       type: 'text',
-                                      text: `Find the ${eventTermDescription} date in this PDF from ${item.link}`
+                                      text: `Find the ${eventDescription} date in this PDF from ${item.link}`
                                     },
                                     {
                                       type: 'image_url',
@@ -429,7 +427,7 @@ serve(async (req) => {
                                   messages: [
                                     {
                                       role: 'system',
-                                      content: `Extract the ${eventTermDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date or "NOT_FOUND".`
+                                      content: `Extract the ${eventDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date or "NOT_FOUND".`
                                     },
                                     {
                                       role: 'user',
@@ -515,7 +513,7 @@ serve(async (req) => {
                         messages: [
                           {
                             role: 'system',
-                            content: `Extract the ${eventTermDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date or "NOT_FOUND".`
+                            content: `Extract the ${eventDescription} date for ${organizationName} from ${currentYear} or ${nextYear}. Return ONLY the date or "NOT_FOUND".`
                           },
                           {
                             role: 'user',
