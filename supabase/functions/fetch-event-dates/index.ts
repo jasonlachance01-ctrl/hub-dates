@@ -27,6 +27,68 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
   }
 }
 
+// Validate date is in the future and not a past date
+function isValidFutureDate(dateStr: string, currentYear: number): boolean {
+  try {
+    // Parse various date formats
+    let parsedDate: Date;
+    
+    // Handle "Month Day, Year" format
+    if (/(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i.test(dateStr)) {
+      parsedDate = new Date(dateStr);
+    }
+    // Handle "M/D/YYYY" format
+    else if (/\d{1,2}\/\d{1,2}\/\d{4}/.test(dateStr)) {
+      const [month, day, year] = dateStr.split('/').map(n => parseInt(n));
+      parsedDate = new Date(year, month - 1, day);
+    } else {
+      return false;
+    }
+    
+    const now = new Date();
+    const yearFromDate = parsedDate.getFullYear();
+    
+    // Reject if date is in the past or more than 2 years in the future
+    if (parsedDate < now || yearFromDate < currentYear || yearFromDate > currentYear + 2) {
+      console.log('⚠️ Rejected date (past or too far future):', dateStr);
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Check if domain should be rejected (irrelevant sources)
+function isRelevantDomain(url: string): boolean {
+  const rejectedDomains = [
+    'eliteprospects.com',
+    'espn.com',
+    'wikipedia.org',
+    'facebook.com',
+    'twitter.com',
+    'instagram.com',
+    'reddit.com',
+    'youtube.com',
+    'linkedin.com',
+  ];
+  
+  try {
+    const domain = new URL(url).hostname.toLowerCase();
+    
+    // Reject if matches blacklist
+    if (rejectedDomains.some(rejected => domain.includes(rejected))) {
+      console.log('⚠️ Rejected irrelevant domain:', domain);
+      return false;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -79,13 +141,17 @@ serve(async (req) => {
         
         const eventTermDescription = eventSearchTerms.join(" or ");
         
-        // Build comprehensive search queries
+        // Build comprehensive search queries with .edu prioritization and academic keywords
         const queries: string[] = [];
         for (const term of eventSearchTerms) {
+          // Prioritize .edu sites with academic calendar keywords
           queries.push(
+            `${organizationName} academic calendar ${term} ${nextYear} site:*.edu`,
+            `${organizationName} ${term} date ${currentYear} ${nextYear} site:*.edu`,
+            `${organizationName} calendar ${term} ${nextYear} site:*.edu`,
+            // Fallback to broader searches if .edu doesn't yield results
+            `${organizationName} academic calendar ${term} ${nextYear}`,
             `${organizationName} ${term} date ${currentYear} ${nextYear}`,
-            `${organizationName} ${term} ${nextYear}`,
-            `${organizationName} calendar ${term} ${nextYear}`
           );
         }
         
@@ -163,7 +229,7 @@ serve(async (req) => {
                     
                       const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                       
-                      if (dateMatch) {
+                      if (dateMatch && isValidFutureDate(dateMatch[0], currentYear)) {
                         eventDates.push({ eventName, date: dateMatch[0] });
                         console.log('✅ SUCCESS via Google Search:', dateMatch[0], 'from', googleSearchUrl);
                         dateFound = true;
@@ -190,10 +256,15 @@ serve(async (req) => {
                 const searchData = await searchResponse.json();
                 
                 if (searchData.items && searchData.items.length > 0) {
-                  // Check for PDF files in results
+                  // Check for PDF files in results - filter by domain relevance
                   for (const item of searchData.items) {
                     if (Date.now() - startTime > MAX_PROCESSING_TIME) {
                       break;
+                    }
+
+                    // Skip irrelevant domains
+                    if (!isRelevantDomain(item.link)) {
+                      continue;
                     }
 
                     const isPDF = item.link?.toLowerCase().endsWith('.pdf') || 
@@ -265,7 +336,7 @@ serve(async (req) => {
                             
                             const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                             
-                            if (dateMatch) {
+                            if (dateMatch && isValidFutureDate(dateMatch[0], currentYear)) {
                               eventDates.push({ eventName, date: dateMatch[0] });
                               console.log('✅ SUCCESS via PDF:', dateMatch[0], 'from', item.link);
                               dateFound = true;
@@ -299,10 +370,15 @@ serve(async (req) => {
                 const searchData = await searchResponse.json();
                 
                 if (searchData.items && searchData.items.length > 0) {
-                  // Try fetching and parsing the top non-PDF result
+                  // Try fetching and parsing the top non-PDF result - filter by domain relevance
                   for (const item of searchData.items) {
                     if (Date.now() - startTime > MAX_PROCESSING_TIME) {
                       break;
+                    }
+
+                    // Skip irrelevant domains
+                    if (!isRelevantDomain(item.link)) {
+                      continue;
                     }
 
                     const isPDF = item.link?.toLowerCase().endsWith('.pdf') || 
@@ -363,7 +439,7 @@ serve(async (req) => {
                                 
                                 const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                                 
-                                if (dateMatch) {
+                                if (dateMatch && isValidFutureDate(dateMatch[0], currentYear)) {
                                   eventDates.push({ eventName, date: dateMatch[0] });
                                   console.log('✅ SUCCESS via HTML:', dateMatch[0], 'from', item.link);
                                   dateFound = true;
@@ -445,7 +521,7 @@ serve(async (req) => {
                             
                             const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                             
-                            if (dateMatch) {
+                            if (dateMatch && isValidFutureDate(dateMatch[0], currentYear)) {
                               eventDates.push({ eventName, date: dateMatch[0] });
                               console.log('✅ SUCCESS via API snippets:', dateMatch[0], 'from', sourceUrls);
                               dateFound = true;
