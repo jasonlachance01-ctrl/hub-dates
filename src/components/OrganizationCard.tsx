@@ -6,6 +6,7 @@ import { Plus, Check, Trash2 } from "lucide-react";
 import { Organization } from "@/types";
 import { toast } from "sonner";
 import { useEventMonitoring } from "@/hooks/useEventMonitoring";
+import { normalizeDateDisplay } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -103,7 +104,9 @@ const OrganizationCard = ({
                 <p className="text-sm font-medium truncate">{event.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-muted-foreground">
-                    {event.date || "Date not available - will monitor and notify when announced"}
+                    {event.date 
+                      ? normalizeDateDisplay(event.date)
+                      : "Date not available - will monitor and notify when announced"}
                   </p>
                   {!event.date && newDates.some(nd => nd.event_name === event.name) && (
                     <Badge variant="default" className="text-xs py-0 px-1.5 bg-primary text-primary-foreground">
