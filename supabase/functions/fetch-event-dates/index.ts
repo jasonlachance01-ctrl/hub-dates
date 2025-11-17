@@ -68,11 +68,13 @@ serve(async (req) => {
             if (html.length > 5000 && !html.includes('redirected within')) {
               let aiOverviewText = '';
               
-              const dateRegex = /(January|February|March|April|May|June|July|August|September|October|November|December)[^<]{0,200}?\d{4}/gi;
+              // Extract larger context around dates - 300 chars before and after
+              const dateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
               const allDateText = html.match(dateRegex);
               if (allDateText && allDateText.length > 0) {
-                aiOverviewText = allDateText.slice(0, 20).join('\n\n');
-                console.log('📄 Extracted date text, segments:', allDateText.length);
+                // Take up to 10 matches with context
+                aiOverviewText = allDateText.slice(0, 10).join('\n\n---\n\n');
+                console.log('📄 Extracted date contexts, segments:', allDateText.length);
               }
               
               if (aiOverviewText) {
@@ -86,11 +88,15 @@ serve(async (req) => {
                     model: 'google/gemini-2.5-flash',
                     messages: [
                       {
+                        role: 'system',
+                        content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in "Month Day, Year" format (e.g., "May 16, 2026") or "NOT_FOUND" if not found.`
+                      },
+                      {
                         role: 'user',
-                        content: `Extract ${event.name} date for ${organizationName} from:\n\n${aiOverviewText}\n\nReturn ONLY date in "Month Day, Year" format or "NOT_FOUND". Only ${currentYear} or ${nextYear} dates.`
+                        content: `Find the ${event.name} date in this text:\n\n${aiOverviewText}`
                       }
                     ],
-                    max_tokens: 70
+                    max_tokens: 50
                   }),
                 });
 
@@ -144,8 +150,12 @@ serve(async (req) => {
                 model: 'google/gemini-2.5-flash',
                 messages: [
                   {
+                    role: 'system',
+                    content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in "Month Day, Year" format (e.g., "May 16, 2026") or "NOT_FOUND" if not found.`
+                  },
+                  {
                     role: 'user',
-                    content: `Extract ${event.name} date for ${organizationName} from:\n\n${searchContext}\n\nReturn ONLY date in "Month Day, Year" format or "NOT_FOUND". Only ${currentYear} or ${nextYear} dates.`
+                    content: `Search results:\n\n${searchContext}\n\nWhat is the ${event.name} date?`
                   }
                 ],
                 max_tokens: 50
