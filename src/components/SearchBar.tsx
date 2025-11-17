@@ -39,6 +39,45 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const prioritizeSuggestions = (suggestions: SearchSuggestion[]): SearchSuggestion[] => {
+    // Define priority scoring
+    const getPriorityScore = (suggestion: SearchSuggestion): number => {
+      const url = suggestion.link.toLowerCase();
+      const title = suggestion.title.toLowerCase();
+      
+      // Highest priority: .edu domains (official educational institutions)
+      if (url.includes('.edu')) return 1000;
+      
+      // High priority: Official school/academy/college websites
+      if (url.match(/\.(school|academy|k12)\./)) return 900;
+      if (title.includes('official') && url.match(/\.(com|org)/)) return 850;
+      
+      // Medium-high priority: School district sites
+      if (url.includes('schooldistrict') || url.includes('district')) return 800;
+      
+      // Low priority: Rating and review sites
+      if (url.includes('niche.com')) return 100;
+      if (url.includes('greatschools.org')) return 90;
+      if (url.includes('usnews.com')) return 80;
+      if (url.includes('schooldigger.com')) return 70;
+      
+      // Lower priority: News articles and blogs
+      if (url.includes('/news/') || url.includes('/article/')) return 50;
+      if (url.includes('blog')) return 40;
+      
+      // Very low priority: Wikipedia
+      if (url.includes('wikipedia.org')) return 30;
+      
+      // Default priority: Everything else
+      return 500;
+    };
+    
+    // Sort by priority score (highest first)
+    return [...suggestions].sort((a, b) => {
+      return getPriorityScore(b) - getPriorityScore(a);
+    });
+  };
+
   useEffect(() => {
     const fetchSuggestions = async () => {
       if (searchQuery.trim().length < 2) {
@@ -55,7 +94,9 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
         if (error) throw error;
 
-        setSuggestions(data.suggestions || []);
+        // Prioritize official school websites
+        const prioritized = prioritizeSuggestions(data.suggestions || []);
+        setSuggestions(prioritized);
         setShowSuggestions(true);
       } catch (error) {
         console.error("Error fetching suggestions:", error);
