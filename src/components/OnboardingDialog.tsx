@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 interface OnboardingDialogProps {
@@ -26,12 +25,12 @@ const OnboardingDialog = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="w-[90vw] max-w-sm mx-auto sm:w-full">
         <DialogHeader className="space-y-3">
-          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
+          <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
+            <img src="/icon-option-1.png" alt="App Icon" className="w-full h-full rounded-2xl" />
           </div>
           <DialogTitle className="text-center text-lg sm:text-xl">Connect Your Calendar</DialogTitle>
           <DialogDescription className="text-center text-sm sm:text-base px-2">
-            Connect your iPhone calendar to automatically add important dates and never miss events!
+            Connect your iPhone calendar to automatically add the dates you have selected and never miss your most important events!
           </DialogDescription>
         </DialogHeader>
 
@@ -45,13 +44,19 @@ const OnboardingDialog = ({
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
-              App badge notifications immediately inform you of updates to your feed events!
+              Receive app notifications informing you of updates or new events to your feed selections.
             </p>
           </div>
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
-              Sharing capability to send important dates to family and friends!
+              Share your saved event dates with family and friends!
+            </p>
+          </div>
+          <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-muted-foreground flex-1">
+              Receive free version of Calsync in-app calendar! *Not available in Beta.
             </p>
           </div>
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
