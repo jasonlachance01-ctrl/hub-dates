@@ -87,19 +87,54 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
     setShowEventDialog(true);
   };
 
-  const cleanOrganizationName = (name: string): string => {
-    // Remove common suffixes from search results
-    return name
+  const cleanOrganizationName = (name: string, url?: string): string => {
+    // Extract actual school name from various result types
+    let cleanName = name;
+    
+    // Remove common prefixes and suffixes from search results
+    cleanName = cleanName
+      .replace(/^Best\s+/i, '') // "Best Catholic Boys High School..."
       .replace(/:\s*Home$/i, '')
       .replace(/\s*-\s*Home$/i, '')
-      .replace(/\s*\|\s*.*$/i, '')
+      .replace(/\s*\|\s*.*$/i, '') // "School | Additional Info"
       .replace(/\s*-\s*Official.*$/i, '')
+      .replace(/\s*-\s*Wikipedia$/i, '')
+      .replace(/\s*-\s*Niche$/i, '')
+      .replace(/\s+in\s+[A-Z][a-z]+,?\s+[A-Z]{2}.*$/i, '') // "School in City, ST - Additional"
+      .replace(/\s+\([^)]+\)$/i, '') // "(Location)" at end
       .trim();
+    
+    // If it's from a rating/review site, try to extract school name from URL
+    if (url && (url.includes('niche.com') || url.includes('greatschools.org') || 
+                url.includes('usnews.com') || url.includes('schooldigger.com'))) {
+      // Try to extract from URL path
+      const urlMatch = url.match(/\/([^/]+)(?:-\d+)?(?:\.html)?$/i);
+      if (urlMatch) {
+        const urlName = urlMatch[1]
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase())
+          .replace(/\s+(High|Middle|Elementary)\s+School$/i, ' $1 School');
+        if (urlName.length > 5) {
+          cleanName = urlName;
+        }
+      }
+    }
+    
+    // Ensure "High School" or similar is included
+    if (!/\b(high|middle|elementary|academy|college|university)\s+school/i.test(cleanName) && 
+        /\b(high|middle|elementary)\b/i.test(name)) {
+      const match = name.match(/\b(high|middle|elementary)\s+school/i);
+      if (match && !cleanName.includes(match[0])) {
+        cleanName += ' ' + match[0];
+      }
+    }
+    
+    return cleanName.trim();
   };
 
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
-    const cleanName = cleanOrganizationName(suggestion.title);
-    setSearchQuery(suggestion.title);
+    const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
+    setSearchQuery(cleanName); // Use cleaned name in search bar too
     setShowSuggestions(false);
     handleSearchWithName(cleanName, suggestion.link);
   };
@@ -192,18 +227,31 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
           
           {showSuggestions && suggestions.length > 0 && (
             <Card className="absolute top-full mt-2 w-full z-50 max-h-96 overflow-y-auto">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSelectSuggestion(suggestion)}
-                  className="w-full text-left p-3 hover:bg-accent transition-colors border-b last:border-b-0"
-                >
-                  <div className="font-medium text-sm">{suggestion.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {suggestion.snippet}
-                  </div>
-                </button>
-              ))}
+              {suggestions.map((suggestion, index) => {
+                const isOfficialSite = suggestion.link.includes('.edu') || 
+                                       suggestion.link.match(/\b(school|academy|college|university)\b/i);
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectSuggestion(suggestion)}
+                    className="w-full text-left p-3 hover:bg-accent transition-colors border-b last:border-b-0"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{suggestion.title}</div>
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {suggestion.snippet}
+                        </div>
+                      </div>
+                      {isOfficialSite && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
+                          Official
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </Card>
           )}
           
