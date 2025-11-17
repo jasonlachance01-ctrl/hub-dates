@@ -51,7 +51,97 @@ serve(async (req) => {
         const query = `What date is ${organizationName} ${event.name} ${currentYear}-${nextYear}`;
         console.log('Search Query:', query);
 
-        // METHOD 1: Try Google Search API first
+        // METHOD 1: Scrape actual Google Search page for AI Overview
+        const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+        console.log('Fetching Google Search page for AI Overview...');
+        
+        try {
+          const pageResponse = await fetch(googleSearchUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+          });
+          
+          if (pageResponse.ok) {
+            const html = await pageResponse.text();
+            
+            // Extract AI Overview content - it's typically in a specific div
+            // Google's AI Overview appears in various possible structures
+            let aiOverview = '';
+            
+            // Try to find AI Overview section (it has various class names)
+            const aiOverviewPatterns = [
+              /<div[^>]*class="[^"]*AyB02e[^"]*"[^>]*>([\s\S]*?)<\/div>/i,  // Common AI Overview class
+              /<div[^>]*data-attrid="AIOverview"[^>]*>([\s\S]*?)<\/div>/i,
+              /<div[^>]*class="[^"]*kno-rdesc[^"]*"[^>]*>([\s\S]*?)<\/div>/i
+            ];
+            
+            for (const pattern of aiOverviewPatterns) {
+              const match = html.match(pattern);
+              if (match && match[1]) {
+                // Clean HTML tags but preserve text
+                aiOverview = match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (aiOverview.length > 50) { // Only use if substantial content
+                  console.log('Found AI Overview:', aiOverview.substring(0, 200));
+                  break;
+                }
+              }
+            }
+            
+            // If we found AI Overview, use it with Gemini
+            if (aiOverview) {
+              const extractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${lovableApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: [
+                    {
+                      role: 'user',
+                      content: `Extract the exact date for "${event.name}" for ${organizationName} from this Google AI Overview:
+
+${aiOverview}
+
+INSTRUCTIONS:
+1. Look for dates in ${currentYear} or ${nextYear}
+2. If you find a date range, return the FULL range: "Month Day, Year - Month Day, Year"
+3. Return ONLY the date in format "Month Day, Year" or range format
+4. If NO date found, respond with exactly: "NOT_FOUND"
+
+Date:`
+                    }
+                  ],
+                  max_tokens: 50
+                }),
+              });
+
+              if (extractResponse.ok) {
+                const extractData = await extractResponse.json();
+                const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
+                
+                console.log('Gemini extracted from AI Overview:', extracted);
+                
+                const dateRangePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\s*-\s*(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+                const singleDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+                const dateMatch = extracted.match(dateRangePattern) || extracted.match(singleDatePattern);
+                
+                if (dateMatch) {
+                  eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                  console.log('✓ Found via AI Overview for', event.name, ':', dateMatch[0]);
+                  await new Promise(resolve => setTimeout(resolve, 700));
+                  continue;
+                }
+              }
+            }
+          }
+        } catch (scrapeError) {
+          console.log('Could not scrape Google page:', scrapeError);
+        }
+
+        // METHOD 2: Try Google Search API as fallback
         const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=10`;
         const searchResponse = await fetch(searchUrl);
         
