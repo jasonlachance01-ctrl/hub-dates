@@ -233,7 +233,9 @@ serve(async (req) => {
             const searchData = await searchResponse.json();
             
             if (searchData.items && searchData.items.length > 0) {
-              const searchContext = searchData.items.slice(0, 10)
+              // Store search results for source tracking
+              const searchResults = searchData.items.slice(0, 10);
+              const searchContext = searchResults
                 .map((item: any) => `${item.title}: ${item.snippet || ''}`)
                 .join('\n\n');
               
@@ -270,6 +272,29 @@ serve(async (req) => {
                 const dateMatch = extracted.match(datePattern);
                 
                 if (dateMatch) {
+                  // Find which snippet contained the date
+                  const dateStr = dateMatch[0];
+                  let sourceFound = false;
+                  
+                  for (const result of searchResults) {
+                    const snippetText = `${result.title} ${result.snippet || ''}`;
+                    if (snippetText.toLowerCase().includes(dateStr.toLowerCase()) ||
+                        snippetText.match(/march\s+12|12\s+march/i) ||
+                        snippetText.match(new RegExp(dateStr.replace(/,?\s+\d{4}/, ''), 'i'))) {
+                      console.log('📍 Date source found:');
+                      console.log('   Title:', result.title);
+                      console.log('   URL:', result.link);
+                      console.log('   Snippet:', result.snippet?.substring(0, 200));
+                      sourceFound = true;
+                      break;
+                    }
+                  }
+                  
+                  if (!sourceFound) {
+                    console.log('⚠️ Date source not found in snippets - AI may have inferred from context');
+                    console.log('   First result:', searchResults[0]?.title, '-', searchResults[0]?.link);
+                  }
+                  
                   eventDates.push({ eventName: event.name, date: dateMatch[0] });
                   methodUsed = 'API Snippets';
                   console.log('✅ SUCCESS via API Snippets:', dateMatch[0]);
