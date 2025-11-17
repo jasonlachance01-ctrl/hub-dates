@@ -69,10 +69,13 @@ serve(async (req) => {
       }
 
       try {
+        // event is a string (event name), not an object
+        const eventName = typeof event === 'string' ? event : event.name;
+        
         // Map event names to include alternative search terms
-        const eventSearchTerms = event.name === "Graduation" 
+        const eventSearchTerms = eventName === "Graduation" 
           ? ["Graduation", "Commencement"]
-          : [event.name];
+          : [eventName];
         
         const eventTermDescription = eventSearchTerms.join(" or ");
         
@@ -158,13 +161,13 @@ serve(async (req) => {
                     const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
                     const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}/i;
                     
-                    const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
-                    
-                    if (dateMatch) {
-                      eventDates.push({ eventName: event.name, date: dateMatch[0] });
-                      console.log('✅ SUCCESS:', dateMatch[0]);
-                      dateFound = true;
-                    }
+                      const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
+                      
+                      if (dateMatch) {
+                        eventDates.push({ eventName, date: dateMatch[0] });
+                        console.log('✅ SUCCESS:', dateMatch[0]);
+                        dateFound = true;
+                      }
                   }
                 }
               }
@@ -263,7 +266,7 @@ serve(async (req) => {
                             const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                             
                             if (dateMatch) {
-                              eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                              eventDates.push({ eventName, date: dateMatch[0] });
                               console.log('✅ SUCCESS via PDF:', dateMatch[0]);
                               dateFound = true;
                               break;
@@ -361,7 +364,7 @@ serve(async (req) => {
                                 const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
                                 
                                 if (dateMatch) {
-                                  eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                                  eventDates.push({ eventName, date: dateMatch[0] });
                                   console.log('✅ SUCCESS via HTML:', dateMatch[0]);
                                   dateFound = true;
                                   break;
@@ -434,14 +437,14 @@ serve(async (req) => {
                       
                       const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
                       const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}/i;
-                      
-                      const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
-                      
-                      if (dateMatch) {
-                        eventDates.push({ eventName: event.name, date: dateMatch[0] });
-                        console.log('✅ SUCCESS via snippets:', dateMatch[0]);
-                        dateFound = true;
-                      }
+                            
+                            const dateMatch = extracted.match(spelledDatePattern) || extracted.match(numericalDatePattern);
+                            
+                            if (dateMatch) {
+                              eventDates.push({ eventName, date: dateMatch[0] });
+                              console.log('✅ SUCCESS via snippets:', dateMatch[0]);
+                              dateFound = true;
+                            }
                     }
                   }
                 }
@@ -454,13 +457,14 @@ serve(async (req) => {
 
         // If no date found after all attempts, add null entry
         if (!dateFound) {
-          eventDates.push({ eventName: event.name, date: null });
-          console.log('❌ No date found for:', event.name);
+          eventDates.push({ eventName, date: null });
+          console.log('❌ No date found for:', eventName);
         }
 
       } catch (error) {
-        console.error(`Error processing event ${event.name}:`, error);
-        eventDates.push({ eventName: event.name, date: null });
+        const eventName = typeof event === 'string' ? event : event.name;
+        console.error(`Error processing event ${eventName}:`, error);
+        eventDates.push({ eventName, date: null });
       }
     }
 
