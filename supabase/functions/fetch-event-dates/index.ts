@@ -81,9 +81,15 @@ serve(async (req) => {
                 let aiOverviewText = '';
                 
                 // Extract larger context around dates - 300 chars before and after
-                const dateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
-                const allDateText = html.match(dateRegex);
-                if (allDateText && allDateText.length > 0) {
+                // Support both spelled-out dates (March 12, 2026) and numerical dates (3/13/2026)
+                const spelledDateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
+                const numericalDateRegex = /.{0,300}\b\d{1,2}\/\d{1,2}\/\d{4}\b.{0,300}/gi;
+                
+                const spelledDates = html.match(spelledDateRegex) || [];
+                const numericalDates = html.match(numericalDateRegex) || [];
+                const allDateText = [...spelledDates, ...numericalDates];
+                
+                if (allDateText.length > 0) {
                   // Take up to 10 matches with context
                   aiOverviewText = allDateText.slice(0, 10).join('\n\n---\n\n');
                   console.log('📄 Extracted date contexts, segments:', allDateText.length);
@@ -101,7 +107,7 @@ serve(async (req) => {
                       messages: [
                         {
                           role: 'system',
-                          content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in "Month Day, Year" format (e.g., "May 16, 2026") or "NOT_FOUND" if not found.`
+                          content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
                         },
                         {
                           role: 'user',
@@ -117,8 +123,13 @@ serve(async (req) => {
                     const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
                     console.log('🤖 AI Overview extraction:', extracted);
                     
-                    const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-                    const dateMatch = extracted.match(datePattern);
+                    // Match both spelled-out dates and numerical dates (including ranges)
+                    const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                    const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}(?:\s+to\s+\d{1,2}\/\d{1,2}\/\d{4})?/i;
+                    
+                    const spelledMatch = extracted.match(spelledDatePattern);
+                    const numericalMatch = extracted.match(numericalDatePattern);
+                    const dateMatch = spelledMatch || numericalMatch;
                     
                     if (dateMatch) {
                       eventDates.push({ eventName: event.name, date: dateMatch[0] });
@@ -164,11 +175,15 @@ serve(async (req) => {
                       const html = await pageResponse.text();
                       console.log('✓ Fetched webpage, length:', html.length);
                       
-                      // Extract dates with context
-                      const dateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
-                      const allDateText = html.match(dateRegex);
+                      // Extract dates with context - both spelled-out and numerical
+                      const spelledDateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
+                      const numericalDateRegex = /.{0,300}\b\d{1,2}\/\d{1,2}\/\d{4}\b.{0,300}/gi;
                       
-                      if (allDateText && allDateText.length > 0) {
+                      const spelledDates = html.match(spelledDateRegex) || [];
+                      const numericalDates = html.match(numericalDateRegex) || [];
+                      const allDateText = [...spelledDates, ...numericalDates];
+                      
+                      if (allDateText.length > 0) {
                         const dateContext = allDateText.slice(0, 15).join('\n\n---\n\n');
                         console.log('📄 Extracted date contexts from webpage, segments:', allDateText.length);
                         
@@ -181,10 +196,10 @@ serve(async (req) => {
                           body: JSON.stringify({
                             model: 'google/gemini-2.5-flash',
                             messages: [
-                              {
-                                role: 'system',
-                                content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in "Month Day, Year" format (e.g., "May 16, 2026") or "NOT_FOUND" if not found.`
-                              },
+                            {
+                              role: 'system',
+                              content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
+                            },
                               {
                                 role: 'user',
                                 content: `Find the ${event.name} date from ${organizationName}'s webpage:\n\n${dateContext}`
@@ -199,8 +214,13 @@ serve(async (req) => {
                           const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
                           console.log('🤖 Webpage extraction:', extracted);
                           
-                          const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-                          const dateMatch = extracted.match(datePattern);
+                          // Match both spelled-out dates and numerical dates (including ranges)
+                          const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                          const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}(?:\s+to\s+\d{1,2}\/\d{1,2}\/\d{4})?/i;
+                          
+                          const spelledMatch = extracted.match(spelledDatePattern);
+                          const numericalMatch = extracted.match(numericalDatePattern);
+                          const dateMatch = spelledMatch || numericalMatch;
                           
                           if (dateMatch) {
                             eventDates.push({ eventName: event.name, date: dateMatch[0] });
@@ -252,7 +272,7 @@ serve(async (req) => {
                   messages: [
                     {
                       role: 'system',
-                      content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in "Month Day, Year" format (e.g., "May 16, 2026") or "NOT_FOUND" if not found.`
+                      content: `You are a date extractor. Look for the ${event.name} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if not found.`
                     },
                     {
                       role: 'user',
@@ -268,8 +288,13 @@ serve(async (req) => {
                 const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
                 console.log('🤖 API snippets extraction:', extracted);
                 
-                const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-                const dateMatch = extracted.match(datePattern);
+                // Match both spelled-out dates and numerical dates (including ranges)
+                const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}(?:\s+to\s+\d{1,2}\/\d{1,2}\/\d{4})?/i;
+                
+                const spelledMatch = extracted.match(spelledDatePattern);
+                const numericalMatch = extracted.match(numericalDatePattern);
+                const dateMatch = spelledMatch || numericalMatch;
                 
                 if (dateMatch) {
                   // Find which snippet contained the date
@@ -278,9 +303,9 @@ serve(async (req) => {
                   
                   for (const result of searchResults) {
                     const snippetText = `${result.title} ${result.snippet || ''}`;
+                    // Check for various date formats in the snippet
                     if (snippetText.toLowerCase().includes(dateStr.toLowerCase()) ||
-                        snippetText.match(/march\s+12|12\s+march/i) ||
-                        snippetText.match(new RegExp(dateStr.replace(/,?\s+\d{4}/, ''), 'i'))) {
+                        snippetText.match(/march\s+1[0-9]|1[0-9]\s+march|3\/1[0-9]\/202[0-9]/i)) {
                       console.log('📍 Date source found:');
                       console.log('   Title:', result.title);
                       console.log('   URL:', result.link);
@@ -327,7 +352,7 @@ serve(async (req) => {
               messages: [
                 {
                   role: 'user',
-                  content: `What is the date of ${event.name} for ${organizationName} in ${currentYear} or ${nextYear}? Return ONLY the date in "Month Day, Year" format or "NOT_FOUND".`
+                  content: `What is the date of ${event.name} for ${organizationName} in ${currentYear} or ${nextYear}? Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026". Return "NOT_FOUND" if unknown.`
                 }
               ],
               max_tokens: 50
@@ -339,8 +364,13 @@ serve(async (req) => {
             const answer = directData.choices?.[0]?.message?.content?.trim() || '';
             console.log('🤖 Direct knowledge:', answer);
             
-            const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-            const dateMatch = answer.match(datePattern);
+            // Match both spelled-out dates and numerical dates (including ranges)
+            const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+            const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}(?:\s+to\s+\d{1,2}\/\d{1,2}\/\d{4})?/i;
+            
+            const spelledMatch = answer.match(spelledDatePattern);
+            const numericalMatch = answer.match(numericalDatePattern);
+            const dateMatch = spelledMatch || numericalMatch;
             
             if (dateMatch) {
               eventDates.push({ eventName: event.name, date: dateMatch[0] });
