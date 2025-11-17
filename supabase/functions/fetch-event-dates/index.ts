@@ -162,7 +162,7 @@ serve(async (req) => {
             break; // Exit query retry loop
           }
 
-          // METHOD 2: Fetch first result's full webpage
+          // METHOD 2: Fetch first result's full webpage (or PDF)
           if (!dateFound) {
             try {
               const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=1`;
@@ -173,16 +173,137 @@ serve(async (req) => {
                 
                 if (searchData.items && searchData.items.length > 0) {
                   const firstResult = searchData.items[0];
-                  console.log('📍 Fetching first result:', firstResult.link);
+                  const resultUrl = firstResult.link;
+                  const isPDF = resultUrl.toLowerCase().endsWith('.pdf') || firstResult.mime?.includes('pdf');
                   
-                  try {
-                    const pageResponse = await fetch(firstResult.link, {
-                      headers: {
-                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept': 'text/html',
-                      },
-                      signal: AbortSignal.timeout(5000) // 5 second timeout
-                    });
+                  console.log('📍 Fetching first result:', resultUrl, isPDF ? '(PDF)' : '(HTML)');
+                  
+                  // METHOD 2A: PDF Parsing
+                  if (isPDF) {
+                    try {
+                      console.log('📄 Attempting to parse PDF...');
+                      const pdfResponse = await fetch(resultUrl, {
+                        headers: {
+                          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        },
+                        signal: AbortSignal.timeout(10000) // 10 second timeout for PDFs
+                      });
+                      
+                      if (pdfResponse.ok) {
+                        const pdfBuffer = await pdfResponse.arrayBuffer();
+                        console.log('✓ Fetched PDF, size:', pdfBuffer.byteLength);
+                        
+                        // Use Lovable AI to extract text from PDF by sending it as base64
+                        const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+                        
+                        // Try to extract text content using AI vision capabilities
+                        const pdfExtractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                          method: 'POST',
+                          headers: {
+                            'Authorization': `Bearer ${lovableApiKey}`,
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            model: 'google/gemini-2.5-flash',
+                            messages: [
+                              {
+                                role: 'system',
+                                content: `You are analyzing an academic calendar PDF. Extract ALL text content you can see, focusing on dates related to ${eventTermDescription}. Include any dates in format like "March 8-16, 2026" or "3/8/2026 to 3/16/2026".`
+                              },
+                              {
+                                role: 'user',
+                                content: [
+                                  {
+                                    type: 'text',
+                                    text: `Extract all text from this PDF, especially dates for ${eventTermDescription} at ${organizationName}:`
+                                  },
+                                  {
+                                    type: 'image_url',
+                                    image_url: {
+                                      url: `data:application/pdf;base64,${base64Pdf}`
+                                    }
+                                  }
+                                ]
+                              }
+                            ],
+                            max_tokens: 2000
+                          }),
+                        });
+                        
+                        if (pdfExtractResponse.ok) {
+                          const extractData = await pdfExtractResponse.json();
+                          const pdfText = extractData.choices?.[0]?.message?.content?.trim() || '';
+                          console.log('📄 Extracted PDF text, length:', pdfText.length);
+                          
+                          if (pdfText.length > 50) {
+                            // Now use AI to find the specific date
+                            const dateExtractResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                              method: 'POST',
+                              headers: {
+                                'Authorization': `Bearer ${lovableApiKey}`,
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({
+                                model: 'google/gemini-2.5-flash',
+                                messages: [
+                                  {
+                                    role: 'system',
+                                    content: `You are a date extractor. Look for the ${eventTermDescription} date for ${organizationName}. Only extract dates from ${currentYear} or ${nextYear}. Return ONLY the date in one of these formats: "Month Day, Year" (e.g., "May 16, 2026") OR "M/D/YYYY" (e.g., "3/13/2026") OR date ranges like "3/13/2026 to 3/22/2026" or "March 8-16, 2026". Return "NOT_FOUND" if not found.`
+                                  },
+                                  {
+                                    role: 'user',
+                                    content: `Find the ${eventTermDescription} date in this PDF content:\n\n${pdfText}`
+                                  }
+                                ],
+                                max_tokens: 50
+                              }),
+                            });
+                            
+                            if (dateExtractResponse.ok) {
+                              const dateData = await dateExtractResponse.json();
+                              const extracted = dateData.choices?.[0]?.message?.content?.trim() || '';
+                              console.log('🤖 PDF date extraction:', extracted);
+                              
+                              // Match various date formats
+                              const spelledDatePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?(?:-\d{1,2})?(?:,?\s+\d{4})?/i;
+                              const numericalDatePattern = /\d{1,2}\/\d{1,2}\/\d{4}(?:\s+to\s+\d{1,2}\/\d{1,2}\/\d{4})?/i;
+                              
+                              const spelledMatch = extracted.match(spelledDatePattern);
+                              const numericalMatch = extracted.match(numericalDatePattern);
+                              const dateMatch = spelledMatch || numericalMatch;
+                              
+                              if (dateMatch && !extracted.includes('NOT_FOUND')) {
+                                eventDates.push({ eventName: event.name, date: dateMatch[0] });
+                                methodUsed = 'PDF Parsing';
+                                console.log('✅ SUCCESS via PDF:', dateMatch[0]);
+                                
+                                // Log the source for transparency
+                                console.log('📍 Date source found:');
+                                console.log('   URL:', resultUrl);
+                                console.log('   Title:', firstResult.title);
+                                
+                                dateFound = true;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    } catch (pdfError) {
+                      console.log('⚠️ PDF parsing failed:', pdfError);
+                      // Continue to try as HTML/webpage
+                    }
+                  }
+                  
+                  // METHOD 2B: Regular webpage parsing (existing logic)
+                  if (!dateFound && !isPDF) {
+                    try {
+                      const pageResponse = await fetch(firstResult.link, {
+                        headers: {
+                          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                          'Accept': 'text/html',
+                        },
+                        signal: AbortSignal.timeout(5000) // 5 second timeout
+                      });
                     
                     if (pageResponse.ok) {
                       const html = await pageResponse.text();
@@ -247,6 +368,7 @@ serve(async (req) => {
                   } catch (e) {
                     console.log('⚠️ Webpage fetch failed:', e);
                   }
+                  } // Close if (!dateFound && !isPDF)
                 }
               }
             } catch (e) {
