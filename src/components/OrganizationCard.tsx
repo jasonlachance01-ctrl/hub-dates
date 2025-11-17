@@ -34,6 +34,7 @@ const OrganizationCard = ({
   onAddToCalendarClick,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddToCalendarDialog, setShowAddToCalendarDialog] = useState(false);
   const { newDates, hasNotifications } = useEventMonitoring(organization.name);
 
   const handleToggleEvent = (eventId: string) => {
@@ -63,8 +64,14 @@ const OrganizationCard = ({
       return;
     }
 
-    // Simulate adding to calendar
+    // Show confirmation dialog
+    setShowAddToCalendarDialog(true);
+  };
+
+  const confirmAddToCalendar = () => {
+    const selectedEvents = organization.events.filter((e) => e.addedToCalendar);
     toast.success(`${selectedEvents.length} event(s) added to your calendar`);
+    setShowAddToCalendarDialog(false);
   };
 
   const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar);
@@ -149,16 +156,47 @@ const OrganizationCard = ({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove {organization.name}?</AlertDialogTitle>
+            <AlertDialogTitle>Remove Organization?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove this calendar from your feed. You can always add it back
-              later.
+              Are you sure you want to remove {organization.name} from your feed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemove} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showAddToCalendarDialog} onOpenChange={setShowAddToCalendarDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add Events to Calendar</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to add the following {organization.events.filter(e => e.addedToCalendar).length} event(s) to your calendar:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-4">
+            {organization.events
+              .filter(e => e.addedToCalendar)
+              .map(event => (
+                <div key={event.id} className="flex items-start gap-2 p-2 rounded-md bg-accent/10">
+                  <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{event.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {event.date ? normalizeDateDisplay(event.date) : "Date TBD"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAddToCalendar}>
+              Add to Calendar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
