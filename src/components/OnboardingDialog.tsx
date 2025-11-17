@@ -34,11 +34,11 @@ const OnboardingDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="text-center font-semibold text-sm sm:text-base text-foreground pt-2">
+        <div className="text-center font-semibold text-sm sm:text-base text-foreground pt-2 pb-1">
           Free Plan Includes
         </div>
 
-        <div className="space-y-2 sm:space-y-3 py-3 sm:py-4">
+        <div className="space-y-2 sm:space-y-3 pb-3 sm:pb-4">
           <div className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg bg-accent/5">
             <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 sm:mt-2 flex-shrink-0" />
             <p className="text-xs sm:text-sm text-muted-foreground flex-1">
