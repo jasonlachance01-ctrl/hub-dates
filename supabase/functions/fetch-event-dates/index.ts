@@ -47,8 +47,14 @@ serve(async (req) => {
     // Fetch dates for each event
     for (const event of events) {
       try {
-        // Comprehensive search query to find the date with year range
-        const query = `What date is ${organizationName} ${event.name} ${currentYear}-${nextYear}`;
+        // Clean organization name for better search results
+        const cleanOrgName = organizationName
+          .replace(/:\s*Top Private University/i, '')
+          .replace(/:\s*.*$/i, '')
+          .trim();
+        
+        // Simplified search query focusing on academic calendar
+        const query = `${cleanOrgName} ${event.name} ${currentYear}-${nextYear} date`;
         console.log('Search Query:', query);
 
         // METHOD 1: Try Google Search API first
@@ -113,29 +119,22 @@ serve(async (req) => {
                 messages: [
                   {
                     role: 'user',
-                    content: `You are a date extraction expert. Extract the exact date for the event "${event.name}" hosted by "${organizationName}" from these search results.
+                    content: `You are a date extraction expert. Find the date for "${event.name}" at ${cleanOrgName} from these search results.
 
 Search Results:
 ${searchContext}
 
-CRITICAL INSTRUCTIONS:
-1. Look for ANY mention of dates for this event, including phrases like:
-   - "graduation is expected to be on Thursday, May 14, 2026"
-   - "Winter Break is from December 22, 2025 to January 2, 2026"
-   - "Spring Break: March 15-23, 2026"
-   - "The ceremony will be held on [date]"
-   - "scheduled for [date]"
+Instructions:
+1. Look for dates like "May 17, 2026" or "March 15-23, 2026"
+2. Academic calendar pages and commencement schedules are most relevant
+3. Return ONLY the date in format "Month Day, Year" or range "Month Day-Day, Year"
+4. Prefer dates in ${nextYear} over ${currentYear}
+5. If no date found, respond exactly: "NOT_FOUND"
 
-2. If you find a date range, return the FULL range: "Month Day, Year - Month Day, Year"
-3. If you find multiple dates for different years, use the LATER year (${nextYear})
-4. ONLY return dates in ${currentYear} or later
-5. Return ONLY the date in format "Month Day, Year" or "Month Day, Year - Month Day, Year"
-6. If NO date is found, respond with exactly: "NOT_FOUND"
-
-Extract the date now:`
+Date:`
                   }
                 ],
-                max_tokens: 50
+                max_tokens: 100
               }),
             });
 
@@ -174,18 +173,17 @@ Extract the date now:`
             messages: [
               {
                 role: 'user',
-                content: `What is the exact date of "${event.name}" for ${organizationName} in ${currentYear}-${nextYear}?
+                content: `What is the exact date of "${event.name}" for ${cleanOrgName} in ${currentYear}-${nextYear}?
 
-IMPORTANT:
-- If there are multiple dates (e.g., one in ${currentYear} and one in ${nextYear}), provide ONLY the LATER date (${nextYear})
-- If there is a date range, provide the FULL range in format "Month Day, Year - Month Day, Year"
-- Respond with the date or range in these formats: "Month Day, Year" or "Month Day, Year - Month Day, Year" (e.g., "March 21, 2026 - March 28, 2026")
-- If you don't know the exact date, respond with exactly "NOT_FOUND"
+Instructions:
+- Prefer ${nextYear} dates over ${currentYear}
+- Return format: "Month Day, Year" or "Month Day-Day, Year"
+- If unknown, respond: "NOT_FOUND"
 
 Date:`
               }
             ],
-            max_tokens: 50
+            max_tokens: 100
           }),
         });
 
