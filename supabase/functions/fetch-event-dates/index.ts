@@ -166,7 +166,9 @@ serve(async (req) => {
           console.log(`🔍 Search Query (attempt ${queryIndex + 1}/${queries.length}):`, query);
           queryIndex++;
 
-          // METHOD 1: Try Google Search scraping for AI Overview and featured content
+          // METHOD 1: DISABLED - Google Search scraping was causing CPU timeouts due to variable page sizes
+          // The other methods (PDF, HTML, API Snippets) are finding dates successfully
+          /*
           try {
             const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&gl=us&hl=en`;
             const pageResponse = await fetchWithTimeout(googleSearchUrl, {
@@ -175,14 +177,13 @@ serve(async (req) => {
                 'Accept': 'text/html',
                 'Accept-Language': 'en-US,en;q=0.9',
               }
-            }, 5000); // 5 second timeout
+            }, 5000);
             
             if (pageResponse.ok) {
               const html = await pageResponse.text();
               console.log('✓ Fetched Google page, length:', html.length);
               
               if (html.length > 5000) {
-                // Extract date contexts - 300 chars before and after dates
                 const spelledDateRegex = /.{0,300}(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}.{0,300}/gi;
                 const numericalDateRegex = /.{0,300}\d{1,2}\/\d{1,2}\/\d{4}.{0,300}/gi;
                 
@@ -191,7 +192,6 @@ serve(async (req) => {
                 const allDateText = [...spelledDates, ...numericalDates];
                 
                 if (allDateText.length > 0) {
-                  // Take up to 8 matches to keep AI processing fast
                   const aiOverviewText = allDateText.slice(0, 8).join('\n\n---\n\n');
                   console.log('📄 Extracted date contexts, segments:', allDateText.length);
                   
@@ -202,7 +202,7 @@ serve(async (req) => {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      model: 'google/gemini-2.5-flash-lite', // Use lite for faster processing
+                      model: 'google/gemini-2.5-flash-lite',
                       messages: [
                         {
                           role: 'system',
@@ -215,7 +215,7 @@ serve(async (req) => {
                       ],
                       max_tokens: 50
                     }),
-                  }, 7000); // 7 second timeout for AI
+                  }, 7000);
 
                   if (extractResponse.ok) {
                     const extractData = await extractResponse.json();
@@ -239,6 +239,7 @@ serve(async (req) => {
           } catch (e) {
             console.log('⚠️ Google scraping failed:', (e as Error).message || 'Unknown error');
           }
+          */
 
           if (dateFound) {
             break;
