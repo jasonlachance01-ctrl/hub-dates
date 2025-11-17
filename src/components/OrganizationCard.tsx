@@ -50,12 +50,6 @@ const OrganizationCard = ({
   };
 
   const handleAddToCalendar = () => {
-    // Trigger onboarding dialog if calendar not connected
-    if (!calendarConnected) {
-      onAddToCalendarClick();
-      return;
-    }
-
     const selectedEvents = organization.events.filter((e) => e.addedToCalendar);
 
     if (selectedEvents.length === 0) {
@@ -63,7 +57,7 @@ const OrganizationCard = ({
       return;
     }
 
-    // Trigger onboarding dialog
+    // Show onboarding dialog
     onAddToCalendarClick();
   };
 
