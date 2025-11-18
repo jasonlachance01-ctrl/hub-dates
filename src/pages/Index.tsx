@@ -101,7 +101,7 @@ const Index = () => {
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
               <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
               <div className="mt-8">
-                <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} calendarConnected={calendarConnected} onAddToCalendarClick={handleAddToCalendarClick} />
+                <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} />
               </div>
             </div>}
         </div>
