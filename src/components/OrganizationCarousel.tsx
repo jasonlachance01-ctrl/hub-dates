@@ -6,7 +6,7 @@ interface OrganizationCarouselProps {
   organizations: Organization[];
   onRemove: (id: string) => void;
   onUpdate: (id: string, updated: Organization) => void;
-  onAddToCalendar: () => void;
+  onAddToCalendar: (orgId: string, syncCallback: () => void) => void;
 }
 
 const OrganizationCarousel = ({
@@ -88,7 +88,7 @@ const OrganizationCarousel = ({
                 organization={org}
                 onRemove={() => onRemove(org.id)}
                 onUpdate={(updated) => onUpdate(org.id, updated)}
-                onAddToCalendar={onAddToCalendar}
+                onAddToCalendar={(syncCallback) => onAddToCalendar(org.id, syncCallback)}
               />
             </div>
           ))}
