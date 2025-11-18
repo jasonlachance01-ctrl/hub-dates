@@ -111,7 +111,7 @@ const OrganizationCard = ({
         )}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-xl font-bold">{organization.name}</CardTitle>
+            <CardTitle className="text-lg sm:text-xl font-bold">{organization.name}</CardTitle>
             <Button
               variant="ghost"
               size="icon"
@@ -122,18 +122,18 @@ const OrganizationCard = ({
             </Button>
           </div>
           {organization.url && (
-            <p className="text-xs text-muted-foreground">{organization.url}</p>
+            <p className="text-xs text-muted-foreground truncate">{organization.url}</p>
           )}
         </CardHeader>
 
-        <CardContent className="flex-1 space-y-2 overflow-y-auto">
+        <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[50vh]">
           {organization.events.map((event) => (
             <div
               key={event.id}
-              className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
             >
-              <div className="flex-1 min-w-0 mr-3">
-                <p className="text-sm font-medium truncate">{event.name}</p>
+              <div className="flex-1 min-w-0 mr-2 sm:mr-3">
+                <p className="text-xs sm:text-sm font-medium truncate">{event.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-muted-foreground">
                     {event.date 
@@ -151,16 +151,16 @@ const OrganizationCard = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => handleToggleEvent(event.id)}
-                className={`h-8 w-8 flex-shrink-0 transition-colors ${
+                className={`h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 transition-colors ${
                   event.addedToCalendar
                     ? "bg-success hover:bg-success/90 text-success-foreground"
                     : "hover:bg-accent"
                 }`}
               >
                 {event.addedToCalendar ? (
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 ) : (
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 )}
               </Button>
             </div>
@@ -170,7 +170,7 @@ const OrganizationCard = ({
         <CardFooter className="pt-3">
           <Button
             onClick={handleAddToCalendar}
-            className="w-full"
+            className="w-full text-sm"
             disabled={!hasSelectedEvents || isSyncing}
           >
             {isSyncing ? "Syncing..." : calendarConnected ? "Sync to Calendar" : "Add to Calendar"}
@@ -179,16 +179,16 @@ const OrganizationCard = ({
       </Card>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[90vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Organization?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-base sm:text-lg">Remove Organization?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               Are you sure you want to remove {organization.name} from your feed?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove} className="w-full sm:w-auto text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Remove
             </AlertDialogAction>
           </AlertDialogFooter>

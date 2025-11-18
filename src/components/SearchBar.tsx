@@ -251,10 +251,10 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   return (
     <>
-      <p className="text-sm text-muted-foreground mb-0.5 text-center">
+      <p className="text-xs sm:text-sm text-muted-foreground mb-0.5 text-center px-2">
         Include City Name for accurate results.
       </p>
-      <div ref={searchRef} className="relative flex gap-2">
+      <div ref={searchRef} className="relative flex gap-2 px-2 sm:px-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -263,11 +263,11 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="pl-10 h-11"
+            className="pl-10 h-11 text-sm"
           />
           
           {showSuggestions && suggestions.length > 0 && (
-            <Card className="absolute top-full mt-2 w-full z-50 max-h-96 overflow-y-auto">
+            <Card className="absolute top-full mt-2 w-full z-50 max-h-[60vh] sm:max-h-96 overflow-y-auto bg-background">
               {suggestions.map((suggestion, index) => {
                 const isOfficialSite = suggestion.link.includes('.edu') || 
                                        suggestion.link.match(/\b(school|academy|college|university)\b/i);
@@ -279,7 +279,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{suggestion.title}</div>
+                        <div className="font-medium text-xs sm:text-sm">{suggestion.title}</div>
                         <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {suggestion.snippet}
                         </div>
@@ -298,13 +298,13 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
           
           {isLoading && (
             <div className="absolute top-full mt-2 w-full z-50">
-              <Card className="p-3 text-center text-sm text-muted-foreground">
+              <Card className="p-3 text-center text-xs sm:text-sm text-muted-foreground bg-background">
                 Loading suggestions...
               </Card>
             </div>
           )}
         </div>
-        <Button onClick={handleSearch} size="lg" className="px-6">
+        <Button onClick={handleSearch} size="lg" className="px-4 sm:px-6 text-sm">
           Add
         </Button>
       </div>
