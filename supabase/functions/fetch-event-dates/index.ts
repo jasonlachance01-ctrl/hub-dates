@@ -33,12 +33,52 @@ serve(async (req) => {
 
   try {
     const { organizationName, events } = await req.json();
-
-    if (!organizationName || !events || !Array.isArray(events)) {
-      return new Response(JSON.stringify({ error: 'Invalid request' }), {
+    
+    // Input validation
+    if (!organizationName || typeof organizationName !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid organization name' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+    
+    if (organizationName.length > 500) {
+      return new Response(JSON.stringify({ error: 'Organization name too long' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!Array.isArray(events)) {
+      return new Response(JSON.stringify({ error: 'Invalid events format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (events.length === 0) {
+      return new Response(JSON.stringify({ error: 'No events provided' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (events.length > 50) {
+      return new Response(JSON.stringify({ error: 'Too many events requested' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Validate each event
+    for (const event of events) {
+      const eventName = typeof event === 'string' ? event : event.name;
+      if (!eventName || typeof eventName !== 'string' || eventName.length > 200) {
+        return new Response(JSON.stringify({ error: 'Invalid event name' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const apiKey = Deno.env.get('GOOGLE_SEARCH_API_KEY');
