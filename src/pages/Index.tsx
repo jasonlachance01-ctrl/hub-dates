@@ -91,9 +91,7 @@ const Index = () => {
                     No calendars yet
                   </h2>
                   <p className="text-muted-foreground text-sm">
-                    Search for schools, teams, or organizations to add their important dates to your feed and effortlessyly add to your calendar
-
-      
+                    When searching for schools include City name for accurate results.
                   </p>
                 </div>
               </div>
