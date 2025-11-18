@@ -23,12 +23,14 @@ interface OrganizationCardProps {
   organization: Organization;
   onRemove: () => void;
   onUpdate: (updated: Organization) => void;
+  onAddToCalendar: () => void;
 }
 
 const OrganizationCard = ({
   organization,
   onRemove,
   onUpdate,
+  onAddToCalendar,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -68,6 +70,16 @@ const OrganizationCard = ({
       return;
     }
 
+    // Check if calendar is already connected
+    const isCalendarConnected = localStorage.getItem('calendarConnected') === 'true';
+    
+    if (!isCalendarConnected) {
+      // Show pricing/onboarding dialog if not connected
+      onAddToCalendar();
+      return;
+    }
+
+    // If already connected, directly sync to calendar
     try {
       setIsSyncing(true);
       
