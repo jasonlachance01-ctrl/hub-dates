@@ -76,7 +76,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground flex-1 break-words leading-snug">
-                  Notifications of changes or new events to your feed selections.
+                  Includes notifications of changes or new events to your feed selections.
                 </p>
               </div>
               <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-lg bg-accent/5">
@@ -109,7 +109,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs text-muted-foreground flex-1 break-words leading-snug">
-                  Notifications of changes or new events to your feed selections.
+                  Includes notifications of changes or new events to your feed selections.
                 </p>
               </div>
               <div className="flex items-start gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-lg bg-accent/5">
