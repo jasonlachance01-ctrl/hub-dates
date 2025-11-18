@@ -55,7 +55,7 @@ const OrganizationCard = ({
   const handleAddEvent = (eventId: string) => {
     const updatedEvents = organization.events.map(event =>
       event.id === eventId
-        ? { ...event, addedToCalendar: true }
+        ? { ...event, addedToCalendar: !event.addedToCalendar }
         : event
     );
     onUpdate({
