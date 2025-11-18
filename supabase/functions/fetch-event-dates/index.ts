@@ -114,8 +114,8 @@ serve(async (req) => {
     // Track which events still need dates
     const eventsNeedingDates = new Set(events.map(e => typeof e === 'string' ? e : e.name));
     
-    // METHOD 0: Try academic calendar query first if multiple events selected
-    if (events.length > 1) {
+    // METHOD 0: Try academic calendar query first for any selected events
+    if (events.length > 0) {
       try {
         console.log('🎓 Querying full academic calendar for all events...');
         const schoolYear = `${currentYear}-${nextYear}`;
