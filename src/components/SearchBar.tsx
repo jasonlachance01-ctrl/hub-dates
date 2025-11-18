@@ -111,7 +111,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast.error("Please enter a school or organization name");
       return;
@@ -124,15 +124,41 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       return;
     }
 
-    // Extract organization name from URL or use as-is
-    let orgName = searchQuery.trim();
-    if (searchQuery.includes(".")) {
-      // Simple URL parsing
-      const urlParts = searchQuery.replace(/https?:\/\//, "").split(".");
-      orgName = urlParts[0].charAt(0).toUpperCase() + urlParts[0].slice(1);
+    // If there are suggestions, use the official name from the top result
+    if (suggestions.length > 0) {
+      const topSuggestion = suggestions[0];
+      const officialName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
+      setPendingOrgName(officialName);
+      setShowEventDialog(true);
+      return;
     }
 
-    setPendingOrgName(orgName);
+    // If no suggestions yet, fetch them first to get the official name
+    try {
+      const { data, error } = await supabase.functions.invoke("search-suggestions", {
+        body: { query: searchQuery },
+      });
+
+      if (!error && data.suggestions?.length > 0) {
+        const prioritized = prioritizeSuggestions(data.suggestions);
+        const topSuggestion = prioritized[0];
+        const officialName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
+        setPendingOrgName(officialName);
+      } else {
+        // Fallback to manual name extraction if no suggestions
+        let orgName = searchQuery.trim();
+        if (searchQuery.includes(".")) {
+          const urlParts = searchQuery.replace(/https?:\/\//, "").split(".");
+          orgName = urlParts[0].charAt(0).toUpperCase() + urlParts[0].slice(1);
+        }
+        setPendingOrgName(orgName);
+      }
+    } catch (error) {
+      console.error("Error fetching official name:", error);
+      // Fallback to user input
+      setPendingOrgName(searchQuery.trim());
+    }
+
     setShowEventDialog(true);
   };
 

@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ScoredSuggestion {
+  title: string;
+  link: string;
+  snippet: string;
+  score: number;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -68,13 +75,43 @@ serve(async (req) => {
       });
     }
 
-    const suggestions = data.items?.map((item: any) => ({
-      title: item.title,
-      link: item.link,
-      snippet: item.snippet,
-    })) || [];
+    // Map and score results for prioritization
+    const scoredSuggestions = (data.items || []).map((item: any) => {
+      const link = item.link.toLowerCase();
+      const title = item.title.toLowerCase();
+      let score = 0;
+      
+      // Prioritize official education domains
+      if (link.includes('.edu')) score += 50;
+      if (link.includes('.gov')) score += 40;
+      if (link.includes('.k12.')) score += 40;
+      if (link.includes('.org')) score += 20;
+      
+      // Boost official-looking titles and content
+      if (title.includes('official') || title.includes('homepage')) score += 30;
+      if (title.includes('university') || title.includes('college') || title.includes('school')) score += 20;
+      if (title.includes('academic calendar') || title.includes('registrar')) score += 25;
+      
+      // Penalize non-official sources
+      if (link.includes('wikipedia')) score -= 30;
+      if (link.includes('reddit') || link.includes('facebook') || link.includes('twitter')) score -= 40;
+      if (title.includes('review') || title.includes('forum')) score -= 20;
+      
+      return {
+        title: item.title,
+        link: item.link,
+        snippet: item.snippet,
+        score
+      };
+    });
+    
+    // Sort by score (highest first) and take top 5
+    const suggestions = scoredSuggestions
+      .sort((a: ScoredSuggestion, b: ScoredSuggestion) => b.score - a.score)
+      .slice(0, 5)
+      .map(({ title, link, snippet }: ScoredSuggestion) => ({ title, link, snippet }));
 
-    console.log('Found suggestions:', suggestions.length);
+    console.log('Found suggestions:', suggestions.length, '(prioritized official sources)');
 
     return new Response(JSON.stringify({ suggestions }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
