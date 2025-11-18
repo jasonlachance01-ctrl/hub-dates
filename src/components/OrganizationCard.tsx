@@ -52,13 +52,12 @@ const OrganizationCard = ({
     return `${currentYear - 1}-${currentYear}`;
   };
 
-  const handleToggleEvent = (eventId: string) => {
-    const updatedEvents = organization.events.map((event) =>
+  const handleAddEvent = (eventId: string) => {
+    const updatedEvents = organization.events.map(event =>
       event.id === eventId
-        ? { ...event, addedToCalendar: !event.addedToCalendar }
+        ? { ...event, addedToCalendar: true }
         : event
     );
-
     onUpdate({
       ...organization,
       events: updatedEvents,
@@ -167,7 +166,7 @@ const OrganizationCard = ({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleToggleEvent(event.id)}
+                onClick={() => handleAddEvent(event.id)}
                 className={`h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 transition-colors ${
                   event.addedToCalendar
                     ? "bg-success hover:bg-success/90 text-success-foreground"

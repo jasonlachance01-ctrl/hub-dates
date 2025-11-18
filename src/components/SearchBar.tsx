@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import EventSelectionDialog from "./EventSelectionDialog";
+
 import { Organization, EventType } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +22,6 @@ interface SearchSuggestion {
 
 const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showEventDialog, setShowEventDialog] = useState(false);
-  const [pendingOrgName, setPendingOrgName] = useState("");
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,42 +122,65 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       return;
     }
 
+    let organizationName = searchQuery.trim();
+
     // If there are suggestions, use the official name from the top result
     if (suggestions.length > 0) {
       const topSuggestion = suggestions[0];
-      const officialName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
-      setPendingOrgName(officialName);
-      setShowEventDialog(true);
-      return;
+      organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
+    } else {
+      // Try to get suggestions first
+      try {
+        const { data, error } = await supabase.functions.invoke("search-suggestions", {
+          body: { query: searchQuery },
+        });
+
+        if (!error && data.suggestions?.length > 0) {
+          const prioritized = prioritizeSuggestions(data.suggestions);
+          const topSuggestion = prioritized[0];
+          organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
+        }
+      } catch (error) {
+        console.error("Error fetching official name:", error);
+      }
     }
 
-    // If no suggestions yet, fetch them first to get the official name
+    // Directly fetch event dates
+    const loadingToast = toast.loading(`Fetching dates for ${organizationName}...`);
+
     try {
-      const { data, error } = await supabase.functions.invoke("search-suggestions", {
-        body: { query: searchQuery },
+      const { data, error } = await supabase.functions.invoke("fetch-event-dates", {
+        body: { organizationName }
       });
 
-      if (!error && data.suggestions?.length > 0) {
-        const prioritized = prioritizeSuggestions(data.suggestions);
-        const topSuggestion = prioritized[0];
-        const officialName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
-        setPendingOrgName(officialName);
-      } else {
-        // Fallback to manual name extraction if no suggestions
-        let orgName = searchQuery.trim();
-        if (searchQuery.includes(".")) {
-          const urlParts = searchQuery.replace(/https?:\/\//, "").split(".");
-          orgName = urlParts[0].charAt(0).toUpperCase() + urlParts[0].slice(1);
-        }
-        setPendingOrgName(orgName);
-      }
-    } catch (error) {
-      console.error("Error fetching official name:", error);
-      // Fallback to user input
-      setPendingOrgName(searchQuery.trim());
-    }
+      if (error) throw error;
 
-    setShowEventDialog(true);
+      const events = data.eventDates?.map((ed: any) => ({
+        id: ed.eventName.toLowerCase().replace(/\s+/g, '-'),
+        name: ed.eventName,
+        date: ed.date,
+        addedToCalendar: false
+      })) || [];
+
+      const newOrg: Organization = {
+        id: Date.now().toString(),
+        name: organizationName,
+        url: searchQuery.includes(".") ? searchQuery : undefined,
+        events,
+      };
+
+      onAdd(newOrg);
+      setSearchQuery("");
+      setSuggestions([]);
+      onSearchPerformed?.();
+      
+      toast.dismiss(loadingToast);
+      toast.success(`${organizationName} added with ${events.length} events`);
+    } catch (error) {
+      console.error("Error fetching event dates:", error);
+      toast.dismiss(loadingToast);
+      toast.error("Failed to fetch event dates. Please try again.");
+    }
   };
 
   const cleanOrganizationName = (name: string, url?: string): string => {
@@ -209,86 +230,11 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
     const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
-    setSearchQuery(cleanName); // Use cleaned name in search bar too
+    setSearchQuery(cleanName);
     setShowSuggestions(false);
-    handleSearchWithName(cleanName, suggestion.link);
+    setTimeout(() => handleSearch(), 100);
   };
 
-  const handleSearchWithName = (name: string, url?: string) => {
-    // Validate the name
-    const validation = validateOrganizationInput(name);
-    if (!validation.success) {
-      toast.error(validation.error);
-      return;
-    }
-    
-    setPendingOrgName(name);
-    setShowEventDialog(true);
-  };
-
-  const handleEventSelection = async (selectedEvents: EventType[]) => {
-    setShowEventDialog(false);
-    
-    // Show loading toast
-    const loadingToast = toast.loading(`Fetching dates for ${pendingOrgName}...`);
-
-    try {
-      // Fetch dates for the selected events
-      const { data, error } = await supabase.functions.invoke("fetch-event-dates", {
-        body: {
-          organizationName: pendingOrgName,
-          events: selectedEvents.map(e => ({ id: e.id, name: e.name }))
-        },
-      });
-
-      if (error) throw error;
-
-      // Merge the dates with the selected events
-      const eventsWithDates = selectedEvents.map(event => {
-        const eventDate = data.eventDates?.find((ed: any) => ed.eventName === event.name);
-        return {
-          ...event,
-          date: eventDate?.date || undefined
-        };
-      });
-
-      const newOrg: Organization = {
-        id: Date.now().toString(),
-        name: pendingOrgName,
-        url: searchQuery.includes(".") ? searchQuery : undefined,
-        events: eventsWithDates,
-      };
-
-      onAdd(newOrg);
-      setSearchQuery("");
-      setSuggestions([]);
-      
-      // Increment user count
-      onSearchPerformed?.();
-      
-      toast.dismiss(loadingToast);
-      toast.success(`${pendingOrgName} added to your feed`);
-    } catch (error) {
-      console.error("Error fetching event dates:", error);
-      toast.dismiss(loadingToast);
-      
-      // Add without dates as fallback
-      const newOrg: Organization = {
-        id: Date.now().toString(),
-        name: pendingOrgName,
-        url: searchQuery.includes(".") ? searchQuery : undefined,
-        events: selectedEvents,
-      };
-
-      onAdd(newOrg);
-      setSearchQuery("");
-      setSuggestions([]);
-      
-      // Increment user count
-      onSearchPerformed?.();
-      toast.warning(`${pendingOrgName} added, but couldn't fetch all dates`);
-    }
-  };
 
   return (
     <>
@@ -349,13 +295,6 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
           Add
         </Button>
       </div>
-
-      <EventSelectionDialog
-        open={showEventDialog}
-        onClose={() => setShowEventDialog(false)}
-        organizationName={pendingOrgName}
-        onConfirm={handleEventSelection}
-      />
     </>
   );
 };
