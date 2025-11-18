@@ -125,9 +125,9 @@ const OrganizationCard = ({
         )}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex items-baseline gap-2">
+            <div>
               <CardTitle className="text-lg sm:text-xl font-bold">{organization.name}</CardTitle>
-              <span className="text-xs sm:text-sm text-muted-foreground font-normal">{getSchoolYear()}</span>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">{getSchoolYear()}</div>
             </div>
             <Button
               variant="ghost"
