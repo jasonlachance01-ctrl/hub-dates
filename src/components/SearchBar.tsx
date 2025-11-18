@@ -143,7 +143,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
     // Remove common prefixes and suffixes from search results
     cleanName = cleanName
       .replace(/^Best\s+/i, '') // "Best Catholic Boys High School..."
-      .replace(/:\s*Home$/i, '')
+      .replace(/:\s*(?:Home|Homepage|Home\s+Page|Official\s+Site|Website).*$/i, '') // Remove ": Homepage", ": Home", etc.
       .replace(/\s*-\s*Home$/i, '')
       .replace(/\s*\|\s*.*$/i, '') // "School | Additional Info"
       .replace(/\s*-\s*Official.*$/i, '')
