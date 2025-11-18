@@ -1,4 +1,5 @@
 import { EventType } from "@/types";
+import { parse } from "date-fns";
 
 /**
  * Escapes special characters in iCalendar text fields per RFC 5545
@@ -40,16 +41,44 @@ export const generateICalendarFile = (
   events.forEach(event => {
     if (!event.date) return; // Skip events without dates
 
-    const eventDate = new Date(event.date);
+    // Parse date string safely to avoid timezone issues
+    // Dates are stored as "August 25, 2025" or "August 25th, 2025"
+    const cleanedDate = event.date.replace(/(\d+)(st|nd|rd|th)/i, "$1");
+    let eventDate: Date;
+    
+    try {
+      // Try parsing as spelled-out date first (e.g., "August 25, 2025")
+      eventDate = parse(cleanedDate, "MMMM d, yyyy", new Date());
+      
+      // Validate parsed date
+      if (isNaN(eventDate.getTime())) {
+        // Fallback: try M/d/yyyy format (e.g., "8/25/2025")
+        eventDate = parse(event.date, "M/d/yyyy", new Date());
+      }
+      
+      if (isNaN(eventDate.getTime())) {
+        console.warn(`Skipping event with invalid date: ${event.name} - ${event.date}`);
+        return;
+      }
+    } catch (error) {
+      console.warn(`Failed to parse date for event: ${event.name} - ${event.date}`, error);
+      return;
+    }
+    
     const eventName = `${organizationName} ${event.name}`;
     
-    // Format date as YYYYMMDD for all-day events
-    const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
+    // Extract date components directly to avoid timezone issues
+    const year = eventDate.getFullYear();
+    const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+    const day = String(eventDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
     
     // For all-day events, DTEND must be the day after (non-inclusive)
-    const endDate = new Date(eventDate);
-    endDate.setDate(endDate.getDate() + 1);
-    const endDateStr = endDate.toISOString().split('T')[0].replace(/-/g, '');
+    const endDate = new Date(year, eventDate.getMonth(), eventDate.getDate() + 1);
+    const endYear = endDate.getFullYear();
+    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+    const endDay = String(endDate.getDate()).padStart(2, '0');
+    const endDateStr = `${endYear}${endMonth}${endDay}`;
     
     // Generate a unique ID for the event (sanitized)
     const sanitizedOrgName = sanitizeFilename(organizationName);
