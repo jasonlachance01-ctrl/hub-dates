@@ -1,7 +1,6 @@
 export interface EventType {
   id: string;
   name: string;
-  selected: boolean;
   date?: string;
   addedToCalendar?: boolean;
 }
