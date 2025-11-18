@@ -110,7 +110,100 @@ serve(async (req) => {
     const nextYear = currentYear + 1;
     const startTime = Date.now();
     const MAX_PROCESSING_TIME = 25000;
+    
+    // Track which events still need dates
+    const eventsNeedingDates = new Set(events.map(e => typeof e === 'string' ? e : e.name));
+    
+    // METHOD 0: Try academic calendar query first if multiple events selected
+    if (events.length > 1) {
+      try {
+        console.log('🎓 Querying full academic calendar for all events...');
+        const schoolYear = `${currentYear}-${nextYear}`;
+        const eventNamesList = Array.from(eventsNeedingDates).join(', ');
+        
+        const calendarResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { 
+                role: 'system', 
+                content: `You are an academic calendar assistant. Return dates in JSON format with this exact structure:
+{
+  "First Day": "Month DD, YYYY",
+  "Fall Break": "Month DD, YYYY",
+  "Thanksgiving": "Month DD, YYYY",
+  "Winter Break": "Month DD, YYYY",
+  "Spring Break": "Month DD, YYYY",
+  "Graduation": "Month DD, YYYY",
+  "Last Day": "Month DD, YYYY"
+}
 
+Map academic calendar terms to these event names:
+- "First Day" = first day of fall semester/classes
+- "Fall Break" = fall break, autumn break, fall recess, reading days in October/November
+- "Thanksgiving" = thanksgiving break, thanksgiving recess
+- "Winter Break" = winter break, winter recess, holiday break, last day before winter break
+- "Spring Break" = spring break, spring recess
+- "Graduation" = graduation, commencement
+- "Last Day" = last day of spring semester/classes, end of academic year
+
+Only include events that are explicitly in the calendar. Use "NOT_FOUND" for events not in the calendar. Return ONLY valid JSON, no additional text.` 
+              },
+              { 
+                role: 'user', 
+                content: `${organizationName} academic calendar ${schoolYear}. Extract dates for: ${eventNamesList}` 
+              }
+            ],
+            max_tokens: 300
+          }),
+        }, 8000);
+
+        if (calendarResponse.ok) {
+          const calendarData = await calendarResponse.json();
+          const calendarAnswer = calendarData.choices?.[0]?.message?.content?.trim() || '';
+          
+          try {
+            // Extract JSON from response (handle markdown code blocks)
+            let jsonStr = calendarAnswer;
+            if (jsonStr.includes('```')) {
+              jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+            }
+            
+            const parsedDates = JSON.parse(jsonStr);
+            console.log('📅 Parsed calendar dates:', parsedDates);
+            
+            // Process each event from the calendar response
+            for (const eventName of eventsNeedingDates) {
+              const dateValue = parsedDates[eventName];
+              
+              if (dateValue && dateValue !== 'NOT_FOUND') {
+                const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
+                const dateMatch = dateValue.match(datePattern);
+                
+                if (dateMatch && isDateInFuture(dateMatch[0])) {
+                  console.log(`✅ Found via Academic Calendar - ${eventName}: ${dateMatch[0]}`);
+                  eventDates.push({ eventName, date: dateMatch[0] });
+                  eventsNeedingDates.delete(eventName);
+                }
+              }
+            }
+            
+            console.log(`📊 Academic calendar found ${eventDates.length}/${events.length} dates`);
+          } catch (parseError) {
+            console.error('❌ Failed to parse calendar JSON:', parseError);
+          }
+        }
+      } catch (error) {
+        console.error('Academic calendar query error:', error);
+      }
+    }
+
+    // Process remaining events individually using fallback methods
     for (const event of events) {
       if (Date.now() - startTime > MAX_PROCESSING_TIME) {
         console.log('⏱️ Time limit approaching, returning partial results');
@@ -119,6 +212,13 @@ serve(async (req) => {
 
       try {
         const eventName = typeof event === 'string' ? event : event.name;
+        
+        // Skip if we already found this event in the academic calendar query
+        if (!eventsNeedingDates.has(eventName)) {
+          console.log(`⏭️  Skipping ${eventName} - already found`);
+          continue;
+        }
+        
         const eventSearchTerms = eventName === "Graduation" ? ["Graduation", "Commencement"] : [eventName];
         const eventTermDescription = eventSearchTerms.join(" or ");
         
@@ -140,10 +240,25 @@ serve(async (req) => {
           console.log(`🔍 Query ${queryIndex + 1}/${queries.length}:`, query);
           queryIndex++;
 
-          // METHOD 0: Direct AI Query (fastest, checks training data first)
+          // METHOD 0: Direct AI Query using academic calendar
           if (queryIndex === 1) { // Only try once per event
             try {
-              console.log('🤖 Asking AI directly for date...');
+              console.log('🤖 Asking AI for academic calendar date...');
+              const schoolYear = `${currentYear}-${nextYear}`;
+              
+              // Define event mapping for the AI
+              const eventMapping = {
+                "First Day": "first day of fall semester/classes",
+                "Fall Break": "fall break, autumn break, fall recess, reading days in October/November",
+                "Thanksgiving": "thanksgiving break, thanksgiving recess",
+                "Winter Break": "winter break, winter recess, holiday break, last day before winter break",
+                "Spring Break": "spring break, spring recess",
+                "Graduation": "graduation, commencement",
+                "Last Day": "last day of spring semester/classes, end of academic year"
+              };
+              
+              const eventDescription = eventMapping[eventName as keyof typeof eventMapping] || eventTermDescription;
+              
               const aiQueryResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -155,11 +270,11 @@ serve(async (req) => {
                   messages: [
                     { 
                       role: 'system', 
-                      content: 'You are a helpful assistant that provides specific academic calendar dates. Return ONLY the date in format "Month DD, YYYY" or "NOT_FOUND" if you do not know. Do not provide explanations or additional context.' 
+                      content: `You are an academic calendar assistant. You will be asked about a specific event from a school's academic calendar. Look for terms like: ${eventDescription}. Return ONLY the date in format "Month DD, YYYY" or "NOT_FOUND" if you do not know. Do not provide explanations.` 
                     },
                     { 
                       role: 'user', 
-                      content: `When is ${eventTermDescription} at ${organizationName} in ${currentYear} or ${nextYear}?` 
+                      content: `${organizationName} academic calendar ${schoolYear}. When is the ${eventName}?` 
                     }
                   ],
                   max_tokens: 50
