@@ -23,7 +23,7 @@ interface OrganizationCardProps {
   organization: Organization;
   onRemove: () => void;
   onUpdate: (updated: Organization) => void;
-  onAddToCalendar: (syncCallback: () => void) => void;
+  onAddToCalendar: (orgId: string) => void;
 }
 
 const OrganizationCard = ({
@@ -70,63 +70,8 @@ const OrganizationCard = ({
       return;
     }
 
-    // Define the actual sync function
-    const performSync = () => {
-      try {
-        setIsSyncing(true);
-        
-        // Generate .ics file content
-        const icsContent = generateICalendarFile(organization.name, selectedEvents);
-        
-        // Trigger download
-        downloadICalendarFile(organization.name, icsContent);
-        
-        // Track this organization as synced
-        const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
-        if (!syncedOrgs.includes(organization.id)) {
-          syncedOrgs.push(organization.id);
-          localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
-        }
-        
-        // Show success message
-        toast.success(
-          `Opening calendar to add ${selectedEvents.length} event${selectedEvents.length > 1 ? 's' : ''}...`,
-          {
-            duration: 4000,
-          }
-        );
-      } catch (error) {
-        console.error("Error generating calendar file:", error);
-        toast.error(
-          "Unable to download calendar file. Please check your browser settings and allow downloads.",
-          {
-            duration: 6000,
-            description: "Make sure downloads are enabled in your browser settings.",
-          }
-        );
-      } finally {
-        setIsSyncing(false);
-      }
-    };
-
-    // Check if calendar is already connected
-    const isCalendarConnected = localStorage.getItem('calendarConnected') === 'true';
-    
-    if (!isCalendarConnected) {
-      // Show pricing/onboarding dialog if not connected, pass the sync function
-      onAddToCalendar(performSync);
-      return;
-    }
-
-    // Check if user is on starter plan and has reached the 2 organization limit
-    const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
-    if (!syncedOrgs.includes(organization.id) && syncedOrgs.length >= 2) {
-      toast.error("To add dates for more than two organizations upgrade to the Step-Up plan.");
-      return;
-    }
-
-    // If already connected, directly sync to calendar
-    performSync();
+    // All non-paying users should see the pricing dialog first
+    onAddToCalendar(organization.id);
   };
 
   const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar);

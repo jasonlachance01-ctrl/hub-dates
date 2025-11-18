@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
+import { Organization } from "@/types";
 
 interface OnboardingDialogProps {
   open: boolean;
   onClose: () => void;
   onConnect: () => void;
   onStarterPlanSelect: () => void;
-  pendingOrgId: string | null;
+  pendingOrg: Organization | null;
 }
 
 const OnboardingDialog = ({
@@ -17,7 +19,7 @@ const OnboardingDialog = ({
   onClose,
   onConnect,
   onStarterPlanSelect,
-  pendingOrgId
+  pendingOrg
 }: OnboardingDialogProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -41,6 +43,45 @@ const OnboardingDialog = ({
     }
   };
 
+
+  const handleStarterPlan = () => {
+    if (!pendingOrg) {
+      toast.error("No organization selected");
+      return;
+    }
+
+    const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
+    if (selectedEvents.length === 0) {
+      toast.error("Please select at least one event to sync");
+      return;
+    }
+
+    // Check 2-organization limit for Starter Plan
+    const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
+    if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 2) {
+      toast.error("To add dates for more than two organizations upgrade to the Step-Up plan.");
+      return;
+    }
+
+    // Generate and download .ics file
+    try {
+      const icsContent = generateICalendarFile(pendingOrg.name, selectedEvents);
+      downloadICalendarFile(pendingOrg.name, icsContent);
+      
+      // Track this organization as synced
+      if (!syncedOrgs.includes(pendingOrg.id)) {
+        syncedOrgs.push(pendingOrg.id);
+        localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
+      }
+
+      toast.success("Calendar file downloaded! Open it to add events to your calendar.");
+      onStarterPlanSelect();
+      onClose();
+    } catch (error) {
+      console.error("Error generating calendar file:", error);
+      toast.error("Failed to generate calendar file. Please try again.");
+    }
+  };
 
   const handleStepUp = () => {
     toast.info("Payment processing coming soon!");
@@ -136,11 +177,11 @@ const OnboardingDialog = ({
             </span>
           </Button>
           <Button 
-            onClick={onStarterPlanSelect} 
+            onClick={handleStarterPlan} 
             className="w-full text-[11px] sm:text-xs leading-tight py-2.5 sm:py-2 h-auto px-2"
           >
             <span className="break-words text-center w-full">
-              Connect Calendar Now with Starter Plan
+              Download Now with Starter Plan
             </span>
           </Button>
           <p className="text-[10px] sm:text-xs text-muted-foreground text-center w-full pt-2">
