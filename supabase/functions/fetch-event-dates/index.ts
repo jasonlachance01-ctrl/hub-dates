@@ -103,7 +103,7 @@ Use the exact event names as they appear in the calendar. Only include future da
             content: `Find all academic calendar dates for ${organizationName} for the ${schoolYearStart}-${schoolYearEnd} school year` 
           }
         ],
-        max_tokens: 1000
+        max_tokens: 4000
       }),
     });
 
