@@ -7,7 +7,7 @@ import { Organization } from "@/types";
 import { toast } from "sonner";
 import { useEventMonitoring } from "@/hooks/useEventMonitoring";
 import { normalizeDateDisplay } from "@/lib/dateUtils";
-import { supabase } from "@/integrations/supabase/client";
+import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,16 +23,12 @@ interface OrganizationCardProps {
   organization: Organization;
   onRemove: () => void;
   onUpdate: (updated: Organization) => void;
-  calendarConnected: boolean;
-  onAddToCalendarClick: () => void;
 }
 
 const OrganizationCard = ({
   organization,
   onRemove,
   onUpdate,
-  calendarConnected,
-  onAddToCalendarClick,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -64,49 +60,40 @@ const OrganizationCard = ({
     });
   };
 
-  const handleAddToCalendar = async () => {
-    const selectedEvents = organization.events.filter((e) => e.addedToCalendar);
+  const handleAddToCalendar = () => {
+    const selectedEvents = organization.events.filter((e) => e.addedToCalendar && e.date);
 
     if (selectedEvents.length === 0) {
-      toast.error("Please select at least one event");
+      toast.error("Please select at least one event with a date");
       return;
     }
 
-    // Check if calendar is already connected
-    const accessToken = localStorage.getItem("googleCalendarAccessToken");
-    
-    if (!accessToken) {
-      // Not connected, show onboarding dialog
-      onAddToCalendarClick();
-      return;
-    }
-    
-    // Already connected, sync directly
-    setIsSyncing(true);
     try {
-      const eventsToSync = selectedEvents.map(e => ({
-        name: e.name,
-        date: e.date,
-        organizationName: organization.name
-      }));
-
-      const { data, error } = await supabase.functions.invoke("sync-calendar-events", {
-        body: { accessToken, events: eventsToSync }
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      const { successCount, totalCount } = data;
+      setIsSyncing(true);
       
-      if (successCount === totalCount) {
-        toast.success(`Successfully synced ${successCount} event${successCount > 1 ? 's' : ''} to Google Calendar!`);
-      } else {
-        toast.warning(`Synced ${successCount} of ${totalCount} events. Some events may have failed.`);
-      }
+      // Generate .ics file content
+      const icsContent = generateICalendarFile(organization.name, selectedEvents);
+      
+      // Trigger download
+      downloadICalendarFile(organization.name, icsContent);
+      
+      // Show success message with instructions
+      toast.success(
+        "Calendar file downloaded! Tap the file in your Downloads to add events to your calendar.",
+        {
+          duration: 6000,
+          description: "If the file didn't download, check your browser settings to allow downloads.",
+        }
+      );
     } catch (error) {
-      console.error("Error syncing to calendar:", error);
-      toast.error("Failed to sync events. Please try reconnecting your calendar.");
+      console.error("Error generating calendar file:", error);
+      toast.error(
+        "Unable to download calendar file. Please check your browser settings and allow downloads.",
+        {
+          duration: 6000,
+          description: "Make sure downloads are enabled in your browser settings.",
+        }
+      );
     } finally {
       setIsSyncing(false);
     }
@@ -189,7 +176,7 @@ const OrganizationCard = ({
             className="w-full text-sm"
             disabled={!hasSelectedEvents || isSyncing}
           >
-            {isSyncing ? "Syncing..." : calendarConnected ? "Sync to Calendar" : "Add to Calendar"}
+            {isSyncing ? "Downloading..." : "Sync to Calendar"}
           </Button>
         </CardFooter>
       </Card>
