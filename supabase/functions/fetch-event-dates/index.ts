@@ -119,13 +119,40 @@ Use the exact event names as they appear in the calendar. Only include future da
     const calendarData = await calendarResponse.json();
     const calendarAnswer = calendarData.choices?.[0]?.message?.content?.trim() || '';
     
+    // Validate response exists
+    if (!calendarAnswer) {
+      console.error('Empty response from AI');
+      return new Response(JSON.stringify({ error: 'No calendar data found', eventDates: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     // Extract JSON from response
     let jsonStr = calendarAnswer;
     if (jsonStr.includes('```')) {
       jsonStr = jsonStr.replace(/```json\s*/g, '').replace(/```\s*/g, '');
     }
     
-    const parsedEvents = JSON.parse(jsonStr);
+    // Validate JSON string is not empty
+    if (!jsonStr.trim()) {
+      console.error('Empty JSON string after extraction');
+      return new Response(JSON.stringify({ error: 'Invalid calendar data format', eventDates: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    let parsedEvents;
+    try {
+      parsedEvents = JSON.parse(jsonStr);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError, 'Raw response:', calendarAnswer);
+      return new Response(JSON.stringify({ error: 'Failed to parse calendar data', eventDates: [] }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     console.log('📅 Parsed calendar events:', parsedEvents);
     
     const eventDates: EventDate[] = [];
