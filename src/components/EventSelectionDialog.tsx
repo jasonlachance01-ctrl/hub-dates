@@ -21,6 +21,7 @@ import { EventType, DEFAULT_EVENT_TYPES } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X } from "lucide-react";
+import { validateOrganizationInput, validateEventNames } from "@/lib/validation";
 
 interface EventSelectionDialogProps {
   open: boolean;
@@ -87,6 +88,20 @@ const EventSelectionDialog = ({
     const selectedEvents = events.filter((e) => e.selected);
     if (selectedEvents.length === 0) {
       toast.error("Please select at least one event");
+      return;
+    }
+
+    // Validate organization name
+    const orgValidation = validateOrganizationInput(organizationName);
+    if (!orgValidation.success) {
+      toast.error(orgValidation.error);
+      return;
+    }
+
+    // Validate event names
+    const eventNamesValidation = validateEventNames(selectedEvents.map(e => e.name));
+    if (!eventNamesValidation.success) {
+      toast.error(eventNamesValidation.error);
       return;
     }
 

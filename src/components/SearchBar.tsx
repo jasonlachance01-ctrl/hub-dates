@@ -7,6 +7,7 @@ import { Organization, EventType } from "@/types";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { validateOrganizationInput } from "@/lib/validation";
 
 interface SearchBarProps {
   onAdd: (organization: Organization) => void;
@@ -116,6 +117,13 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       return;
     }
 
+    // Validate input
+    const validation = validateOrganizationInput(searchQuery.trim());
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
     // Extract organization name from URL or use as-is
     let orgName = searchQuery.trim();
     if (searchQuery.includes(".")) {
@@ -181,6 +189,13 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   };
 
   const handleSearchWithName = (name: string, url?: string) => {
+    // Validate the name
+    const validation = validateOrganizationInput(name);
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+    
     setPendingOrgName(name);
     setShowEventDialog(true);
   };

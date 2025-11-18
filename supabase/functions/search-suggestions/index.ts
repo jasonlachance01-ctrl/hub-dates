@@ -13,12 +13,29 @@ serve(async (req) => {
 
   try {
     const { query } = await req.json();
-
-    if (!query || query.trim().length === 0) {
+    
+    // Input validation
+    if (!query || typeof query !== 'string') {
       return new Response(JSON.stringify({ suggestions: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    if (query.trim().length === 0) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    if (query.length > 500) {
+      return new Response(JSON.stringify({ error: 'Query too long' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Basic sanitization for URL encoding
+    const sanitizedQuery = query.trim();
 
     const apiKey = Deno.env.get('GOOGLE_SEARCH_API_KEY');
     const searchEngineId = Deno.env.get('GOOGLE_SEARCH_ENGINE_ID');
@@ -36,9 +53,9 @@ serve(async (req) => {
 
     console.log('Using Search Engine ID:', searchEngineId.substring(0, 5) + '...');
 
-    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(query)}&num=5`;
+    const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodeURIComponent(sanitizedQuery)}&num=5`;
 
-    console.log('Fetching search suggestions for:', query);
+    console.log('Fetching search suggestions for:', sanitizedQuery);
 
     const response = await fetch(searchUrl);
     const data = await response.json();
