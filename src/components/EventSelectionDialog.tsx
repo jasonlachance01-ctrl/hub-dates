@@ -118,10 +118,17 @@ const EventSelectionDialog = ({
       const eventsToMonitor = eventsWithDates.filter(e => !e.date);
       
       if (eventsToMonitor.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+
         const monitoringInserts = eventsToMonitor.map(event => ({
           organization_name: organizationName,
           event_name: event.name,
           date_found: null,
+          user_id: user.id,
         }));
 
         const { error: monitorError } = await supabase
