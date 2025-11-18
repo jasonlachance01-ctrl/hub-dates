@@ -235,7 +235,6 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
     const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
     setSearchQuery(cleanName);
     setShowSuggestions(false);
-    setTimeout(() => handleSearch(), 100);
   };
 
 
