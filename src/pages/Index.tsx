@@ -7,8 +7,7 @@ import { Organization } from "@/types";
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [pendingOrgId, setPendingOrgId] = useState<string | null>(null);
-  const [pendingSyncCallback, setPendingSyncCallback] = useState<(() => void) | null>(null);
+  const [pendingOrg, setPendingOrg] = useState<Organization | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(() => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
@@ -27,25 +26,17 @@ const Index = () => {
   const handleUpdateOrganization = (id: string, updatedOrg: Organization) => {
     setOrganizations(prev => prev.map(org => org.id === id ? updatedOrg : org));
   };
-  const handleAddToCalendarClick = (orgId: string, syncCallback: () => void) => {
-    // Store which organization is trying to sync and the callback to complete it
-    setPendingOrgId(orgId);
-    setPendingSyncCallback(() => syncCallback);
-    setShowOnboarding(true);
+  const handleAddToCalendar = (orgId: string) => {
+    const org = organizations.find(o => o.id === orgId);
+    if (org) {
+      setPendingOrg(org);
+      setShowOnboarding(true);
+    }
   };
   
   const handleStarterPlanSelect = () => {
-    setCalendarConnected(true);
     setShowOnboarding(false);
-    // Save to localStorage so it persists
-    localStorage.setItem('calendarConnected', 'true');
-    
-    // Execute the pending sync callback if it exists
-    if (pendingSyncCallback) {
-      pendingSyncCallback();
-      setPendingSyncCallback(null);
-    }
-    setPendingOrgId(null);
+    setPendingOrg(null);
   };
   
   const handleCalendarConnect = () => {
@@ -53,8 +44,7 @@ const Index = () => {
     setShowOnboarding(false);
     // Save to localStorage so it persists
     localStorage.setItem('calendarConnected', 'true');
-    setPendingSyncCallback(null);
-    setPendingOrgId(null);
+    setPendingOrg(null);
   };
 
   const handleSearchPerformed = () => {
@@ -122,12 +112,12 @@ const Index = () => {
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
               <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
               <div className="mt-8">
-                <OrganizationCarousel 
-                  organizations={organizations} 
-                  onRemove={handleRemoveOrganization} 
-                  onUpdate={handleUpdateOrganization}
-                  onAddToCalendar={handleAddToCalendarClick}
-                />
+        <OrganizationCarousel
+          organizations={organizations}
+          onRemove={handleRemoveOrganization}
+          onUpdate={handleUpdateOrganization}
+          onAddToCalendar={handleAddToCalendar}
+        />
               </div>
             </div>}
         </div>
@@ -138,12 +128,11 @@ const Index = () => {
         open={showOnboarding} 
         onClose={() => {
           setShowOnboarding(false);
-          setPendingOrgId(null);
-          setPendingSyncCallback(null);
+          setPendingOrg(null);
         }}
         onConnect={handleCalendarConnect}
         onStarterPlanSelect={handleStarterPlanSelect}
-        pendingOrgId={pendingOrgId}
+        pendingOrg={pendingOrg}
       />
     </div>;
 };
