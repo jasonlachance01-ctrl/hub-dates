@@ -45,7 +45,7 @@ export const generateICalendarFile = (
 };
 
 /**
- * Triggers download of an .ics file
+ * Triggers automatic opening of .ics file (opens calendar app directly)
  */
 export const downloadICalendarFile = (
   organizationName: string,
@@ -53,14 +53,23 @@ export const downloadICalendarFile = (
 ): void => {
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
   const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
   
+  // Create a link element
+  const link = document.createElement('a');
   link.href = url;
   link.download = `${organizationName.replace(/\s+/g, '-')}-calendar.ics`;
   
+  // For iOS/Android: Try to open directly (triggers calendar app)
+  // For Desktop: Falls back to download
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
   
-  window.URL.revokeObjectURL(url);
+  // Try to open the file directly (works on mobile)
+  window.location.href = url;
+  
+  // Fallback: Also trigger download in case direct open doesn't work
+  setTimeout(() => {
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }, 100);
 };
