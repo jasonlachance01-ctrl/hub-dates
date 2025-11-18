@@ -77,12 +77,11 @@ const OrganizationCard = ({
       // Trigger download
       downloadICalendarFile(organization.name, icsContent);
       
-      // Show success message with instructions
+      // Show success message
       toast.success(
-        "Calendar file downloaded! Tap the file in your Downloads to add events to your calendar.",
+        `Opening calendar to add ${selectedEvents.length} event${selectedEvents.length > 1 ? 's' : ''}...`,
         {
-          duration: 6000,
-          description: "If the file didn't download, check your browser settings to allow downloads.",
+          duration: 4000,
         }
       );
     } catch (error) {
