@@ -38,6 +38,20 @@ const OrganizationCard = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const { newDates, hasNotifications } = useEventMonitoring(organization.name);
 
+  // Calculate school year based on current date
+  const getSchoolYear = () => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed (0 = January, 6 = July)
+    
+    // If July or later, show upcoming year combination
+    if (currentMonth >= 6) {
+      return `${currentYear}-${currentYear + 1}`;
+    }
+    // If before July, show current year combination
+    return `${currentYear - 1}-${currentYear}`;
+  };
+
   const handleToggleEvent = (eventId: string) => {
     const updatedEvents = organization.events.map((event) =>
       event.id === eventId
@@ -111,7 +125,10 @@ const OrganizationCard = ({
         )}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <CardTitle className="text-lg sm:text-xl font-bold">{organization.name}</CardTitle>
+            <div className="flex items-baseline gap-2">
+              <CardTitle className="text-lg sm:text-xl font-bold">{organization.name}</CardTitle>
+              <span className="text-xs sm:text-sm text-muted-foreground font-normal">{getSchoolYear()}</span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
