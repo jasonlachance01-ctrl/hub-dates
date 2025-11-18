@@ -8,12 +8,16 @@ interface OnboardingDialogProps {
   open: boolean;
   onClose: () => void;
   onConnect: () => void;
+  onStarterPlanSelect: () => void;
+  pendingOrgId: string | null;
 }
 
 const OnboardingDialog = ({
   open,
   onClose,
-  onConnect
+  onConnect,
+  onStarterPlanSelect,
+  pendingOrgId
 }: OnboardingDialogProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -132,12 +136,11 @@ const OnboardingDialog = ({
             </span>
           </Button>
           <Button 
-            onClick={handleConnect} 
+            onClick={onStarterPlanSelect} 
             className="w-full text-[11px] sm:text-xs leading-tight py-2.5 sm:py-2 h-auto px-2"
-            disabled={isConnecting}
           >
             <span className="break-words text-center w-full">
-              {isConnecting ? "Connecting..." : "Connect Calendar Now with Starter Plan"}
+              Connect Calendar Now with Starter Plan
             </span>
           </Button>
           <p className="text-[10px] sm:text-xs text-muted-foreground text-center w-full pt-2">
