@@ -128,6 +128,55 @@ serve(async (req) => {
           console.log(`🔍 Query ${queryIndex + 1}/${queries.length}:`, query);
           queryIndex++;
 
+          // METHOD 0: Direct AI Query (fastest, checks training data first)
+          if (queryIndex === 1) { // Only try once per event
+            try {
+              console.log('🤖 Asking AI directly for date...');
+              const aiQueryResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${lovableApiKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'google/gemini-2.5-flash',
+                  messages: [
+                    { 
+                      role: 'system', 
+                      content: 'You are a helpful assistant that provides specific academic calendar dates. Return ONLY the date in format "Month DD, YYYY" or "NOT_FOUND" if you do not know. Do not provide explanations or additional context.' 
+                    },
+                    { 
+                      role: 'user', 
+                      content: `When is ${eventTermDescription} at ${organizationName} in ${currentYear} or ${nextYear}?` 
+                    }
+                  ],
+                  max_tokens: 50
+                }),
+              }, 5000);
+
+              if (aiQueryResponse.ok) {
+                const aiData = await aiQueryResponse.json();
+                const aiAnswer = aiData.choices?.[0]?.message?.content?.trim() || '';
+                
+                const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}/i;
+                const dateMatch = aiAnswer.match(datePattern);
+                
+                if (aiAnswer !== 'NOT_FOUND' && dateMatch) {
+                  console.log(`✅ SUCCESS via Direct AI: ${dateMatch[0]}`);
+                  eventDates.push({ eventName, date: dateMatch[0] });
+                  dateFound = true;
+                  break; // Early exit
+                } else {
+                  console.log('❌ AI does not have this date in training data');
+                }
+              }
+            } catch (error) {
+              console.error('METHOD 0 error:', error);
+            }
+          }
+
+          if (dateFound) break; // Early exit
+
           // METHOD 1: Google Search scraping
           try {
             const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}&gl=us&hl=en`;
