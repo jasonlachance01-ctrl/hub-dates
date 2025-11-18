@@ -110,14 +110,13 @@ serve(async (req) => {
         const eventSearchTerms = eventName === "Graduation" ? ["Graduation", "Commencement"] : [eventName];
         const eventTermDescription = eventSearchTerms.join(" or ");
         
+        // Reduced to 1-2 queries max per event for performance
         const queries: string[] = [];
         for (const term of eventSearchTerms) {
-          queries.push(
-            `${organizationName} ${term} date ${currentYear} ${nextYear}`,
-            `${organizationName} ${term} ${nextYear}`,
-            `${organizationName} calendar ${term} ${nextYear}`
-          );
+          // Use only the most specific query
+          queries.push(`${organizationName} ${term} date ${currentYear} ${nextYear}`);
         }
+        // Max 2 queries total (handles Graduation with 2 terms)
         
         let dateFound = false;
         let queryIndex = 0;
@@ -177,7 +176,7 @@ serve(async (req) => {
                       console.log(`✅ SUCCESS via Google: ${extracted}`);
                       eventDates.push({ eventName, date: extracted });
                       dateFound = true;
-                      break;
+                      break; // Early exit: stop processing this query immediately
                     }
                   }
                 }
@@ -187,7 +186,7 @@ serve(async (req) => {
             console.error('METHOD 1 error:', error);
           }
 
-          if (dateFound) break;
+          if (dateFound) break; // Early exit: stop processing queries for this event
 
           // METHOD 2: API search with PARALLEL webpage fetching
           if (!dateFound) {
@@ -268,7 +267,7 @@ serve(async (req) => {
                         console.log(`✅ SUCCESS via HTML: ${result.value.date} from ${result.value.source}`);
                         eventDates.push({ eventName, date: result.value.date });
                         dateFound = true;
-                        break;
+                        break; // Early exit: stop processing parallel results immediately
                       }
                     }
                   }
@@ -279,7 +278,7 @@ serve(async (req) => {
             }
           }
 
-          if (dateFound) break;
+          if (dateFound) break; // Early exit: stop processing queries for this event
 
           // METHOD 3: API snippets fallback
           if (!dateFound) {
@@ -322,6 +321,7 @@ serve(async (req) => {
                         console.log('✅ SUCCESS via API snippets:', dateMatch[0], 'from', sourceUrls);
                         eventDates.push({ eventName, date: dateMatch[0] });
                         dateFound = true;
+                        break; // Early exit: stop processing snippets immediately
                       }
                     }
                   }
