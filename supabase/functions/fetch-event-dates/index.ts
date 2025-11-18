@@ -11,6 +11,18 @@ interface EventDate {
   date: string | null;
 }
 
+// Helper function to validate date is in the future
+function isDateInFuture(dateString: string): boolean {
+  try {
+    const parsedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Compare dates, not times
+    return parsedDate >= today;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 8000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -161,11 +173,13 @@ serve(async (req) => {
                 const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}/i;
                 const dateMatch = aiAnswer.match(datePattern);
                 
-                if (aiAnswer !== 'NOT_FOUND' && dateMatch) {
+                if (aiAnswer !== 'NOT_FOUND' && dateMatch && isDateInFuture(dateMatch[0])) {
                   console.log(`✅ SUCCESS via Direct AI: ${dateMatch[0]}`);
                   eventDates.push({ eventName, date: dateMatch[0] });
                   dateFound = true;
                   break; // Early exit
+                } else if (dateMatch && !isDateInFuture(dateMatch[0])) {
+                  console.log(`❌ AI returned past date (${dateMatch[0]}), ignoring`);
                 } else {
                   console.log('❌ AI does not have this date in training data');
                 }
@@ -221,11 +235,13 @@ serve(async (req) => {
                   
                   if (extracted !== 'NOT_FOUND') {
                     const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}/i;
-                    if (datePattern.test(extracted)) {
+                    if (datePattern.test(extracted) && isDateInFuture(extracted)) {
                       console.log(`✅ SUCCESS via Google: ${extracted}`);
                       eventDates.push({ eventName, date: extracted });
                       dateFound = true;
                       break; // Early exit: stop processing this query immediately
+                    } else if (datePattern.test(extracted)) {
+                      console.log(`❌ Past date found via Google (${extracted}), ignoring`);
                     }
                   }
                 }
@@ -296,8 +312,10 @@ serve(async (req) => {
                                   const extracted = extractData.choices?.[0]?.message?.content?.trim() || '';
                                   
                                   const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}/i;
-                                  if (extracted !== 'NOT_FOUND' && datePattern.test(extracted)) {
+                                  if (extracted !== 'NOT_FOUND' && datePattern.test(extracted) && isDateInFuture(extracted)) {
                                     return { date: extracted, source: item.link };
+                                  } else if (datePattern.test(extracted)) {
+                                    console.log(`❌ Past date found (${extracted}), ignoring`);
                                   }
                                 }
                               }
@@ -366,11 +384,13 @@ serve(async (req) => {
                       const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}/i;
                       const dateMatch = extracted.match(datePattern);
                       
-                      if (dateMatch) {
+                      if (dateMatch && isDateInFuture(dateMatch[0])) {
                         console.log('✅ SUCCESS via API snippets:', dateMatch[0], 'from', sourceUrls);
                         eventDates.push({ eventName, date: dateMatch[0] });
                         dateFound = true;
                         break; // Early exit: stop processing snippets immediately
+                      } else if (dateMatch) {
+                        console.log(`❌ Past date found via snippets (${dateMatch[0]}), ignoring`);
                       }
                     }
                   }
