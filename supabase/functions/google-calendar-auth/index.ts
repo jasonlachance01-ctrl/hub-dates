@@ -11,11 +11,15 @@ serve(async (req) => {
   }
 
   try {
+    const { redirectUri } = await req.json();
     const clientId = Deno.env.get('GOOGLE_CALENDAR_CLIENT_ID');
-    const redirectUri = `${new URL(req.url).origin}/google-calendar-callback`;
     
     if (!clientId) {
       throw new Error('Google Calendar Client ID not configured');
+    }
+
+    if (!redirectUri) {
+      throw new Error('Redirect URI not provided');
     }
 
     // Google OAuth 2.0 authorization endpoint

@@ -20,7 +20,10 @@ const OnboardingDialog = ({
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("google-calendar-auth");
+      const redirectUri = `${window.location.origin}/google-calendar-callback`;
+      const { data, error } = await supabase.functions.invoke("google-calendar-auth", {
+        body: { redirectUri }
+      });
       
       if (error) throw error;
       if (data.error) throw new Error(data.error);
