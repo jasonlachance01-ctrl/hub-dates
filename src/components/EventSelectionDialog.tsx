@@ -147,7 +147,7 @@ const EventSelectionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-sm max-h-[85vh] sm:max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="w-[95vw] max-w-sm max-h-[85vh] sm:max-h-[90vh] flex flex-col p-0 gap-0 !fixed !left-[50%] !top-[50%] !-translate-x-1/2 !-translate-y-1/2">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-lg sm:text-xl">{organizationName}</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
