@@ -147,15 +147,16 @@ const EventSelectionDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-xl">{organizationName}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="w-[95vw] max-w-sm max-h-[85vh] sm:max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+          <DialogTitle className="text-lg sm:text-xl">{organizationName}</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Select the events you want to track for this organization. Only future dates will be shown.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-4">
+        <div className="overflow-y-auto flex-1 px-6 py-2">
+          <div className="space-y-3 py-2">
           {events.map((event) => (
             <div
               key={event.id}
@@ -227,25 +228,26 @@ const EventSelectionDialog = ({
               )}
             </div>
           </div>
+          </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col sm:flex-row gap-2 px-6 pb-6 pt-4 shrink-0 border-t">
           <Button 
             variant="outline" 
             onClick={onClose} 
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto text-sm"
             disabled={isLoading}
           >
             Cancel
           </Button>
           <Button 
             onClick={handleConfirm} 
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto text-sm"
             disabled={isLoading}
           >
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                 Finding dates...
               </>
             ) : (
