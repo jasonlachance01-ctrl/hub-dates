@@ -1,16 +1,33 @@
 import { z } from "zod";
 
 // Organization name/URL validation
+// Uses Unicode property escapes for international character support
+// Supports: letters (any script), numbers, common punctuation
 export const organizationInputSchema = z.string()
   .trim()
   .min(1, "Organization name or URL is required")
   .max(500, "Organization name or URL must be less than 500 characters")
   .refine(
     (value) => {
-      // Allow either a valid domain/URL or a reasonable organization name
-      const urlPattern = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/i;
-      const namePattern = /^[a-zA-Z0-9\s\-.'&,()]+$/;
-      return urlPattern.test(value) || namePattern.test(value);
+      // First, try to validate as URL
+      if (value.includes('.')) {
+        try {
+          // Attempt to parse as URL (with or without protocol)
+          const urlTest = value.startsWith('http') ? value : `https://${value}`;
+          new URL(urlTest);
+          return true;
+        } catch {
+          // Not a valid URL, continue to name validation
+        }
+      }
+      
+      // Validate as organization name with Unicode support
+      // \p{L} = any Unicode letter (covers accented chars, non-Latin scripts like Chinese, Arabic, etc.)
+      // \p{N} = any Unicode number
+      // Also allows: spaces, hyphen, period, apostrophe, ampersand, comma, parentheses, colon, slash
+      // The 'u' flag enables full Unicode support
+      const namePattern = /^[\p{L}\p{N}\s\-.'&,():\/]+$/u;
+      return namePattern.test(value);
     },
     "Please enter a valid organization name or URL"
   );
