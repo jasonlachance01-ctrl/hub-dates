@@ -25,6 +25,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [shouldFetchSuggestions, setShouldFetchSuggestions] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (searchQuery.trim().length < 2) {
+      if (searchQuery.trim().length < 2 || !shouldFetchSuggestions) {
         setSuggestions([]);
         setShowSuggestions(false);
         return;
@@ -107,7 +108,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
     const debounceTimer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+  }, [searchQuery, shouldFetchSuggestions]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -155,8 +156,8 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
       if (error) throw error;
 
-      const events = data.eventDates?.map((ed: any) => ({
-        id: ed.eventName.toLowerCase().replace(/\s+/g, '-'),
+      const events = data.eventDates?.map((ed: any, index: number) => ({
+        id: `${ed.eventName.toLowerCase().replace(/\s+/g, '-')}-${index}`,
         name: ed.eventName,
         date: ed.date,
         addedToCalendar: false
@@ -172,6 +173,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       onAdd(newOrg);
       setSearchQuery("");
       setSuggestions([]);
+      setShouldFetchSuggestions(true); // Re-enable suggestions for next search
       onSearchPerformed?.();
       
       toast.dismiss(loadingToast);
@@ -229,6 +231,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   };
 
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
+    setShouldFetchSuggestions(false); // Stop fetching suggestions after selection
     const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
     setSearchQuery(cleanName);
     setShowSuggestions(false);
