@@ -72,6 +72,9 @@ const Index = () => {
           <p className="text-sm text-muted-foreground leading-relaxed">
             Enter the name or URL of any School, Organization, or Team to add to your feed then select the important dates from their calendar to import into your own!
           </p>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+            When searching for schools include City name for accurate results.
+          </p>
         </div>
       </section>
 
@@ -91,7 +94,7 @@ const Index = () => {
                     No calendars yet
                   </h2>
                   <p className="text-muted-foreground text-sm">
-                    When searching for schools include City name for accurate results.
+                    Search above to get started with your first calendar.
                   </p>
                 </div>
               </div>
