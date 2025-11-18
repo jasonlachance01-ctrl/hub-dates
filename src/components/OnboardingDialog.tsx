@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OnboardingDialogProps {
   open: boolean;
@@ -13,11 +15,23 @@ const OnboardingDialog = ({
   onClose,
   onConnect
 }: OnboardingDialogProps) => {
-  const handleConnect = () => {
-    // Simulate iOS calendar connection
-    // In a real app, this would trigger iOS calendar API
-    toast.success("Calendar connected successfully!");
-    onConnect();
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-calendar-auth");
+      
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      
+      // Redirect to Google OAuth
+      window.location.href = data.authUrl;
+    } catch (error) {
+      console.error("Error initiating calendar connection:", error);
+      toast.error("Failed to connect calendar. Please try again.");
+      setIsConnecting(false);
+    }
   };
 
 
@@ -69,8 +83,12 @@ const OnboardingDialog = ({
         </div>
 
         <DialogFooter className="flex-col sm:flex-col gap-2">
-          <Button onClick={handleConnect} className="w-full text-sm sm:text-base">
-            Connect Calendar with one-time Google Authorization
+          <Button 
+            onClick={handleConnect} 
+            className="w-full text-sm sm:text-base"
+            disabled={isConnecting}
+          >
+            {isConnecting ? "Connecting..." : "Connect Calendar with one-time Google Authorization"}
           </Button>
         </DialogFooter>
       </DialogContent>

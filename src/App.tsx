@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import IconPreview from "./pages/IconPreview";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/icon-preview" element={<IconPreview />} />
           <Route path="/install" element={<Install />} />
+          <Route path="/google-calendar-callback" element={<GoogleCalendarCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
