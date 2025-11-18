@@ -7,6 +7,7 @@ import { Organization } from "@/types";
 import { toast } from "sonner";
 import { useEventMonitoring } from "@/hooks/useEventMonitoring";
 import { normalizeDateDisplay } from "@/lib/dateUtils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,7 @@ const OrganizationCard = ({
   onAddToCalendarClick,
 }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { newDates, hasNotifications } = useEventMonitoring(organization.name);
 
   const handleToggleEvent = (eventId: string) => {
@@ -49,7 +51,7 @@ const OrganizationCard = ({
     });
   };
 
-  const handleAddToCalendar = () => {
+  const handleAddToCalendar = async () => {
     const selectedEvents = organization.events.filter((e) => e.addedToCalendar);
 
     if (selectedEvents.length === 0) {
@@ -57,8 +59,44 @@ const OrganizationCard = ({
       return;
     }
 
-    // Show onboarding dialog
-    onAddToCalendarClick();
+    // Check if calendar is already connected
+    const accessToken = localStorage.getItem("googleCalendarAccessToken");
+    
+    if (!accessToken) {
+      // Not connected, show onboarding dialog
+      onAddToCalendarClick();
+      return;
+    }
+    
+    // Already connected, sync directly
+    setIsSyncing(true);
+    try {
+      const eventsToSync = selectedEvents.map(e => ({
+        name: e.name,
+        date: e.date,
+        organizationName: organization.name
+      }));
+
+      const { data, error } = await supabase.functions.invoke("sync-calendar-events", {
+        body: { accessToken, events: eventsToSync }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      const { successCount, totalCount } = data;
+      
+      if (successCount === totalCount) {
+        toast.success(`Successfully synced ${successCount} event${successCount > 1 ? 's' : ''} to Google Calendar!`);
+      } else {
+        toast.warning(`Synced ${successCount} of ${totalCount} events. Some events may have failed.`);
+      }
+    } catch (error) {
+      console.error("Error syncing to calendar:", error);
+      toast.error("Failed to sync events. Please try reconnecting your calendar.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar);
@@ -133,9 +171,9 @@ const OrganizationCard = ({
           <Button
             onClick={handleAddToCalendar}
             className="w-full"
-            disabled={!hasSelectedEvents}
+            disabled={!hasSelectedEvents || isSyncing}
           >
-            Add to Calendar
+            {isSyncing ? "Syncing..." : calendarConnected ? "Sync to Calendar" : "Add to Calendar"}
           </Button>
         </CardFooter>
       </Card>
