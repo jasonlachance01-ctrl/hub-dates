@@ -1,17 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
 import { Organization } from "@/types";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [calendarConnected, setCalendarConnected] = useState(() => {
@@ -49,46 +42,6 @@ const Index = () => {
     localStorage.setItem('userCount', newCount.toString());
   };
 
-  useEffect(() => {
-    // Check authentication
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setIsAuthenticated(true);
-      }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setIsAuthenticated(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
-
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header Section */}
       <header className="flex-shrink-0 px-4 pt-6 pb-4">
@@ -96,14 +49,6 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-foreground">Calsync</h1>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="h-8 w-8"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
               <div className="px-3 py-1 bg-secondary/10 border border-border rounded-full">
                 <span className="text-xs font-semibold text-foreground">
                   Users: {userCount}
