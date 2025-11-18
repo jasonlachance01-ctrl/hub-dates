@@ -1,6 +1,28 @@
 import { EventType } from "@/types";
 
 /**
+ * Escapes special characters in iCalendar text fields per RFC 5545
+ */
+const escapeICalText = (text: string): string => {
+  return text
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/;/g, '\\;')    // Escape semicolons
+    .replace(/,/g, '\\,')    // Escape commas
+    .replace(/\n/g, '\\n');  // Escape newlines
+};
+
+/**
+ * Sanitizes filename by removing invalid characters
+ */
+const sanitizeFilename = (filename: string): string => {
+  return filename
+    .replace(/[/\\:*?"<>|]/g, '-')  // Replace invalid filename chars
+    .replace(/\s+/g, '-')            // Replace spaces
+    .replace(/-+/g, '-')             // Remove duplicate dashes
+    .replace(/^-|-$/g, '');          // Trim dashes from start/end
+};
+
+/**
  * Generates an iCalendar (.ics) file content for the given events
  */
 export const generateICalendarFile = (
@@ -29,16 +51,21 @@ export const generateICalendarFile = (
     endDate.setDate(endDate.getDate() + 1);
     const endDateStr = endDate.toISOString().split('T')[0].replace(/-/g, '');
     
-    // Generate a unique ID for the event
-    const uid = `${event.id}-${organizationName.replace(/\s+/g, '-')}@academiccalendar.app`;
+    // Generate a unique ID for the event (sanitized)
+    const sanitizedOrgName = sanitizeFilename(organizationName);
+    const uid = `${event.id}-${sanitizedOrgName}@academiccalendar.app`;
+    
+    // Escape special characters per RFC 5545
+    const escapedSummary = escapeICalText(eventName);
+    const escapedDescription = escapeICalText(eventName);
     
     lines.push(
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTART;VALUE=DATE:${dateStr}`,
       `DTEND;VALUE=DATE:${endDateStr}`,
-      `SUMMARY:${eventName}`,
-      `DESCRIPTION:${eventName}`,
+      `SUMMARY:${escapedSummary}`,
+      `DESCRIPTION:${escapedDescription}`,
       `STATUS:CONFIRMED`,
       'END:VEVENT'
     );
@@ -63,7 +90,7 @@ export const downloadICalendarFile = (
   const link = document.createElement('a');
   
   link.href = url;
-  link.download = `${organizationName.replace(/\s+/g, '-')}-calendar.ics`;
+  link.download = `${sanitizeFilename(organizationName)}-calendar.ics`;
   
   // Append to body, click, then cleanup
   document.body.appendChild(link);
