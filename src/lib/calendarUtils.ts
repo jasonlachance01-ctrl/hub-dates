@@ -59,9 +59,14 @@ export const generateICalendarFile = (
     const escapedSummary = escapeICalText(eventName);
     const escapedDescription = escapeICalText(eventName);
     
+    // DTSTAMP is REQUIRED by RFC 5545 - timestamp when event was created
+    const now = new Date();
+    const dtstamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
     lines.push(
       'BEGIN:VEVENT',
       `UID:${uid}`,
+      `DTSTAMP:${dtstamp}`,
       `DTSTART;VALUE=DATE:${dateStr}`,
       `DTEND;VALUE=DATE:${endDateStr}`,
       `SUMMARY:${escapedSummary}`,
