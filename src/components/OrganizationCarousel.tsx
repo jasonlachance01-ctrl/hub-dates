@@ -6,12 +6,14 @@ interface OrganizationCarouselProps {
   organizations: Organization[];
   onRemove: (id: string) => void;
   onUpdate: (id: string, updated: Organization) => void;
+  onAddToCalendar: () => void;
 }
 
 const OrganizationCarousel = ({
   organizations,
   onRemove,
   onUpdate,
+  onAddToCalendar,
 }: OrganizationCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -86,6 +88,7 @@ const OrganizationCarousel = ({
                 organization={org}
                 onRemove={() => onRemove(org.id)}
                 onUpdate={(updated) => onUpdate(org.id, updated)}
+                onAddToCalendar={onAddToCalendar}
               />
             </div>
           ))}
