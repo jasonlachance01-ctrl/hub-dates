@@ -24,6 +24,11 @@ export const generateICalendarFile = (
     // Format date as YYYYMMDD for all-day events
     const dateStr = eventDate.toISOString().split('T')[0].replace(/-/g, '');
     
+    // For all-day events, DTEND must be the day after (non-inclusive)
+    const endDate = new Date(eventDate);
+    endDate.setDate(endDate.getDate() + 1);
+    const endDateStr = endDate.toISOString().split('T')[0].replace(/-/g, '');
+    
     // Generate a unique ID for the event
     const uid = `${event.id}-${organizationName.replace(/\s+/g, '-')}@academiccalendar.app`;
     
@@ -31,7 +36,7 @@ export const generateICalendarFile = (
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTART;VALUE=DATE:${dateStr}`,
-      `DTEND;VALUE=DATE:${dateStr}`,
+      `DTEND;VALUE=DATE:${endDateStr}`,
       `SUMMARY:${eventName}`,
       `DESCRIPTION:${eventName}`,
       `STATUS:CONFIRMED`,
