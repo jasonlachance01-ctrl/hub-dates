@@ -75,28 +75,35 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: `You are an academic calendar assistant. Extract ALL important academic dates from the school's academic calendar for the ${schoolYearStart}-${schoolYearEnd} school year.
+            content: `You are an academic calendar assistant.
 
-Return a JSON array of events in this exact format:
+For the ${schoolYearStart}-${schoolYearEnd} school year, return the MOST IMPORTANT academic dates for ${organizationName}.
+
+STRICT FORMAT:
+- Your ENTIRE response MUST be a single valid JSON array.
+- Do NOT include Markdown code fences, comments, or explanations.
+- Include AT MOST 30 events.
+
+JSON format:
 [
   {"name": "First Day of Classes", "date": "August 25, 2025"},
   {"name": "Fall Break", "date": "October 13, 2025"},
   {"name": "Thanksgiving Break", "date": "November 27, 2025"}
 ]
 
-Include ALL of these event types if found in the calendar:
+When choosing events, prioritize (if available):
 - First day of classes/semester
 - Fall break, reading days, autumn break
 - Thanksgiving break
-- Winter break, holiday break
+- Winter/holiday break
 - Spring break
 - Last day of classes/semester
-- Graduation, commencement
+- Graduation/commencement
 - Final exams periods
-- Registration dates
-- Any other significant academic dates
+- Registration deadlines and other major academic milestones
 
-Use the exact event names as they appear in the calendar. Only include future dates. Return ONLY valid JSON array, no additional text.` 
+Use the exact event names from the calendar.
+Only include future dates (on or after today).` 
           },
           { 
             role: 'user', 
@@ -147,11 +154,27 @@ Use the exact event names as they appear in the calendar. Only include future da
     try {
       parsedEvents = JSON.parse(jsonStr);
     } catch (parseError) {
-      console.error('JSON parse error:', parseError, 'Raw response:', calendarAnswer);
-      return new Response(JSON.stringify({ error: 'Failed to parse calendar data', eventDates: [] }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.error('Primary JSON parse error:', parseError, 'Raw response:', calendarAnswer);
+      // Attempt to recover a valid JSON array from the response
+      const arrayMatch = jsonStr.match(/\[\s*{[\s\S]*}\s*\]/);
+
+      if (arrayMatch) {
+        try {
+          parsedEvents = JSON.parse(arrayMatch[0]);
+          console.log('✅ Recovered calendar events from partial JSON');
+        } catch (secondaryError) {
+          console.error('Secondary JSON parse error after recovery attempt:', secondaryError);
+          return new Response(JSON.stringify({ error: 'Failed to parse calendar data', eventDates: [] }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } else {
+        return new Response(JSON.stringify({ error: 'Failed to parse calendar data', eventDates: [] }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
     console.log('📅 Parsed calendar events:', parsedEvents);
     
