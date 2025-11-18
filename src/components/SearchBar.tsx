@@ -80,6 +80,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
+      // Skip if query too short or fetching disabled
       if (searchQuery.trim().length < 2 || !shouldFetchSuggestions) {
         setSuggestions([]);
         setShowSuggestions(false);
@@ -88,19 +89,41 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke("search-suggestions", {
+        // Add timeout for suggestion fetching (shorter than main search)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Suggestion fetch timeout')), 10000)
+        );
+
+        const fetchPromise = supabase.functions.invoke("search-suggestions", {
           body: { query: searchQuery },
         });
 
-        if (error) throw error;
+        const { data, error } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
 
-        // Prioritize official school websites
-        const prioritized = prioritizeSuggestions(data.suggestions || []);
-        setSuggestions(prioritized);
-        setShowSuggestions(true);
+        if (error) {
+          console.warn("Error fetching suggestions:", error);
+          setSuggestions([]);
+          setShowSuggestions(false);
+          return;
+        }
+
+        // Validate and prioritize suggestions
+        if (data?.suggestions && Array.isArray(data.suggestions)) {
+          const prioritized = prioritizeSuggestions(data.suggestions);
+          setSuggestions(prioritized);
+          setShowSuggestions(prioritized.length > 0);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
       } catch (error) {
-        console.error("Error fetching suggestions:", error);
+        // Fail silently for suggestions - don't interrupt user flow
+        console.warn("Failed to fetch suggestions:", error);
         setSuggestions([]);
+        setShowSuggestions(false);
       } finally {
         setIsLoading(false);
       }
@@ -111,58 +134,82 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   }, [searchQuery, shouldFetchSuggestions]);
 
   const handleSearch = async () => {
+    // Input validation
     if (!searchQuery.trim()) {
       toast.error("Please enter a school or organization name");
       return;
     }
 
-    // Validate input
+    // Validate input with comprehensive error handling
     const validation = validateOrganizationInput(searchQuery.trim());
     if (!validation.success) {
-      toast.error(validation.error);
+      toast.error(validation.error || "Please enter a valid organization name or URL");
       return;
     }
 
     let organizationName = searchQuery.trim();
 
-    // If there are suggestions, use the official name from the top result
+    // Use suggestion if available, otherwise fetch
     if (suggestions.length > 0) {
       const topSuggestion = suggestions[0];
       organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
     } else {
-      // Try to get suggestions first
+      // Attempt to fetch official name from search suggestions
       try {
         const { data, error } = await supabase.functions.invoke("search-suggestions", {
           body: { query: searchQuery },
         });
 
-        if (!error && data.suggestions?.length > 0) {
+        if (!error && data?.suggestions?.length > 0) {
           const prioritized = prioritizeSuggestions(data.suggestions);
           const topSuggestion = prioritized[0];
           organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
         }
       } catch (error) {
-        console.error("Error fetching official name:", error);
+        console.warn("Could not fetch official name, using user input:", error);
+        // Continue with user-provided name
       }
     }
 
-    // Directly fetch event dates
+    // Fetch event dates with comprehensive error handling
     const loadingToast = toast.loading(`Fetching dates for ${organizationName}...`);
 
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-event-dates", {
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 30000)
+      );
+
+      const fetchPromise = supabase.functions.invoke("fetch-event-dates", {
         body: { organizationName }
       });
 
-      if (error) throw error;
+      const { data, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
 
-      const events = data.eventDates?.map((ed: any, index: number) => ({
+      if (error) {
+        // Handle specific error types
+        if (error.message?.includes('timeout')) {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw error;
+      }
+
+      // Validate response data
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+
+      const events = (data.eventDates || []).map((ed: any, index: number) => ({
         id: `${ed.eventName.toLowerCase().replace(/\s+/g, '-')}-${index}`,
         name: ed.eventName,
         date: ed.date,
         addedToCalendar: false
-      })) || [];
+      }));
 
+      // Create organization object
       const newOrg: Organization = {
         id: Date.now().toString(),
         name: organizationName,
@@ -170,18 +217,36 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
         events,
       };
 
+      // Success - update state and notify user
       onAdd(newOrg);
       setSearchQuery("");
       setSuggestions([]);
-      setShouldFetchSuggestions(true); // Re-enable suggestions for next search
+      setShouldFetchSuggestions(true);
       onSearchPerformed?.();
       
       toast.dismiss(loadingToast);
-      toast.success(`${organizationName} added with ${events.length} events`);
+      
+      if (events.length === 0) {
+        toast.success(`${organizationName} added (no upcoming events found)`);
+      } else {
+        toast.success(`${organizationName} added with ${events.length} event${events.length === 1 ? '' : 's'}`);
+      }
     } catch (error) {
       console.error("Error fetching event dates:", error);
       toast.dismiss(loadingToast);
-      toast.error("Failed to fetch event dates. Please try again.");
+      
+      // Provide specific error messages
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('timeout')) {
+        toast.error("Request timed out. The server may be busy, please try again.");
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        toast.error("Network error. Please check your connection and try again.");
+      } else if (errorMessage.includes('credentials') || errorMessage.includes('API')) {
+        toast.error("Service configuration error. Please contact support.");
+      } else {
+        toast.error("Could not fetch event dates. Please verify the organization name and try again.");
+      }
     }
   };
 
