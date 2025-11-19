@@ -72,6 +72,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
+        temperature: 0.3,
         messages: [
           { 
             role: 'system', 
@@ -83,6 +84,7 @@ STRICT FORMAT:
 - Your ENTIRE response MUST be a single valid JSON array.
 - Do NOT include Markdown code fences, comments, or explanations.
 - Include AT MOST 50 events.
+- For multi-day events (breaks, exam periods), use ONLY the first day with a descriptive name (e.g., "Spring Break begins" not separate entries for each day).
 
 JSON format:
 [
