@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
 import { Organization } from "@/types";
+import EmailPromptDialog from "./EmailPromptDialog";
 
 interface OnboardingDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ const OnboardingDialog = ({
   pendingOrg
 }: OnboardingDialogProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -63,6 +65,22 @@ const OnboardingDialog = ({
       return;
     }
 
+    // Check if this is the first sync and user hasn't provided email
+    const userEmail = localStorage.getItem('userEmail');
+    if (syncedOrgs.length === 0 && !userEmail) {
+      setShowEmailPrompt(true);
+      return;
+    }
+
+    proceedWithDownload();
+  };
+
+  const proceedWithDownload = () => {
+    if (!pendingOrg) return;
+
+    const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
+    const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
+
     // Generate and download .ics file
     try {
       const icsContent = generateICalendarFile(pendingOrg.name, selectedEvents);
@@ -83,13 +101,25 @@ const OnboardingDialog = ({
     }
   };
 
+  const handleEmailSubmit = (email: string) => {
+    setShowEmailPrompt(false);
+    proceedWithDownload();
+  };
+
   const handleStepUp = () => {
     toast.info("Payment processing coming soon!");
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[88vw] max-w-[420px] mx-auto sm:w-full sm:max-w-lg md:max-w-2xl p-4 sm:p-6">
+    <>
+      <EmailPromptDialog
+        open={showEmailPrompt}
+        onEmailSubmit={handleEmailSubmit}
+        onClose={() => setShowEmailPrompt(false)}
+      />
+      
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="w-[88vw] max-w-[420px] mx-auto sm:w-full sm:max-w-lg md:max-w-2xl p-4 sm:p-6">
         <DialogHeader className="space-y-2">
           <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center flex-shrink-0">
             <img src="/icon-option-6-blue.png" alt="App Icon" className="w-full h-full rounded-2xl" />
@@ -196,6 +226,7 @@ const OnboardingDialog = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
