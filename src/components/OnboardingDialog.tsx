@@ -115,7 +115,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Begin your free Starter plan now and sync your already selected event dates to your calendar by hitting the Connect Calendar Now button.
+                  Begin your Starter plan now by syncing your already selected event dates. Just hit the Connect Calendar Now button to sync events.
                 </p>
               </div>
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
