@@ -22,7 +22,7 @@ interface SearchSuggestion {
 
 const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [originalQuery, setOriginalQuery] = useState(""); // Store user's original search
+  const [selectedOrgName, setSelectedOrgName] = useState(""); // Store cleaned name when suggestion is selected
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,9 +148,8 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       return;
     }
 
-    // Use the original user query as the organization name
-    // This ensures accurate search results instead of cleaned page titles
-    const organizationName = originalQuery || searchQuery.trim();
+    // Use selectedOrgName if user clicked a suggestion, otherwise use their direct input
+    const organizationName = selectedOrgName || searchQuery.trim();
 
     // Fetch event dates with comprehensive error handling
     const loadingToast = toast.loading(`Fetching dates for ${organizationName}...`);
@@ -201,7 +200,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       // Success - update state and notify user
       onAdd(newOrg);
       setSearchQuery("");
-      setOriginalQuery("");
+      setSelectedOrgName("");
       setSuggestions([]);
       setShouldFetchSuggestions(true);
       onSearchPerformed?.();
@@ -279,11 +278,9 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
     setShouldFetchSuggestions(false); // Stop fetching suggestions after selection
-    // Store original query before suggestion was selected
-    if (!originalQuery) {
-      setOriginalQuery(searchQuery);
-    }
     const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
+    // Store the cleaned name to use for search and card display
+    setSelectedOrgName(cleanName);
     setSearchQuery(cleanName);
     setShowSuggestions(false);
   };
@@ -300,9 +297,10 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              // Reset original query when user types again after selecting a suggestion
-              if (originalQuery && e.target.value !== searchQuery) {
-                setOriginalQuery("");
+              // Clear selected org name when user manually edits after selecting a suggestion
+              if (selectedOrgName) {
+                setSelectedOrgName("");
+                setShouldFetchSuggestions(true);
               }
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
