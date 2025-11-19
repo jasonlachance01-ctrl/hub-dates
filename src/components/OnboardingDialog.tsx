@@ -173,7 +173,7 @@ const OnboardingDialog = ({
             className="w-full text-[11px] sm:text-xs md:text-sm leading-tight py-2.5 sm:py-2 md:py-2.5 h-auto px-2"
           >
             <span className="break-words text-center w-full">
-              Upgrade to unlimited feed selections with Step-up Plan
+              Upgrade to unlimited feed selections with Step Up Plan
             </span>
           </Button>
           <Button 
