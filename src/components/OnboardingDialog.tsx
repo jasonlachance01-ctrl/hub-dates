@@ -59,7 +59,7 @@ const OnboardingDialog = ({
     // Check 2-organization limit for Starter Plan
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
     if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 2) {
-      toast.error("To add dates for more than two organizations upgrade to the Step-Up plan.");
+      toast.error("To add dates for more than two organizations upgrade to the Step Up Plan.");
       return;
     }
 
