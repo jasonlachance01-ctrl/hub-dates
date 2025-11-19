@@ -8,6 +8,7 @@ const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingOrg, setPendingOrg] = useState<Organization | null>(null);
+  const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
   const [calendarConnected, setCalendarConnected] = useState(() => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
@@ -26,10 +27,11 @@ const Index = () => {
   const handleUpdateOrganization = (id: string, updatedOrg: Organization) => {
     setOrganizations(prev => prev.map(org => org.id === id ? updatedOrg : org));
   };
-  const handleAddToCalendar = (orgId: string) => {
+  const handleAddToCalendar = (orgId: string, onSuccess: () => void) => {
     const org = organizations.find(o => o.id === orgId);
     if (org) {
       setPendingOrg(org);
+      setPendingCallback(() => onSuccess);
       setShowOnboarding(true);
     }
   };
@@ -37,6 +39,10 @@ const Index = () => {
   const handleStarterPlanSelect = () => {
     setShowOnboarding(false);
     setPendingOrg(null);
+    if (pendingCallback) {
+      pendingCallback();
+      setPendingCallback(null);
+    }
   };
   
   const handleCalendarConnect = () => {
@@ -129,6 +135,7 @@ const Index = () => {
         onClose={() => {
           setShowOnboarding(false);
           setPendingOrg(null);
+          setPendingCallback(null);
         }}
         onConnect={handleCalendarConnect}
         onStarterPlanSelect={handleStarterPlanSelect}
