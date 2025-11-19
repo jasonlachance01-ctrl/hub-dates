@@ -111,7 +111,7 @@ const OrganizationCard = ({
               className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
             >
               <div className="flex-1 min-w-0 mr-2 sm:mr-3">
-                <p className="text-xs sm:text-sm font-medium truncate">{event.name}</p>
+                <p className="text-xs sm:text-sm font-medium line-clamp-2">{event.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-muted-foreground">
                     {event.date 
