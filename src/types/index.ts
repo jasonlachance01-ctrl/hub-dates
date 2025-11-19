@@ -3,6 +3,7 @@ export interface EventType {
   name: string;
   date?: string;
   addedToCalendar?: boolean;
+  syncedToCalendar?: boolean;
 }
 
 export interface Organization {
