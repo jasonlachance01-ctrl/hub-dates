@@ -82,7 +82,7 @@ For the ${schoolYearStart}-${schoolYearEnd} school year, return the MOST IMPORTA
 STRICT FORMAT:
 - Your ENTIRE response MUST be a single valid JSON array.
 - Do NOT include Markdown code fences, comments, or explanations.
-- Include AT MOST 30 events.
+- Include AT MOST 50 events.
 
 JSON format:
 [
