@@ -56,10 +56,10 @@ const OnboardingDialog = ({
       return;
     }
 
-    // Check 2-organization limit for Starter Plan
+    // Check 1-organization limit for Starter Plan
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
-    if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 2) {
-      toast.error("To add dates for more than two organizations upgrade to the Step Up Plan.");
+    if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
+      toast.error("To add dates for more than one organization upgrade to the Step Up Plan.");
       return;
     }
 
@@ -109,7 +109,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes up to <strong>two</strong> school, organization, or team selections in your feed.
+                  Includes <strong>one</strong> school selection in your feed.
                 </p>
               </div>
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
