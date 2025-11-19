@@ -181,7 +181,7 @@ const OnboardingDialog = ({
             className="w-full text-[11px] sm:text-xs leading-tight py-2.5 sm:py-2 h-auto px-2"
           >
             <span className="break-words text-center w-full">
-              Download Now with Starter Plan
+              Connect Calendar Now with FREE Starter Plan
             </span>
           </Button>
           <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground text-center w-full pt-2">
