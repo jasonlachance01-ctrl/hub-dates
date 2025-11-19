@@ -22,6 +22,7 @@ interface SearchSuggestion {
 
 const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [originalQuery, setOriginalQuery] = useState(""); // Store user's original search
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,29 +148,9 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       return;
     }
 
-    let organizationName = searchQuery.trim();
-
-    // Use suggestion if available, otherwise fetch
-    if (suggestions.length > 0) {
-      const topSuggestion = suggestions[0];
-      organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
-    } else {
-      // Attempt to fetch official name from search suggestions
-      try {
-        const { data, error } = await supabase.functions.invoke("search-suggestions", {
-          body: { query: searchQuery },
-        });
-
-        if (!error && data?.suggestions?.length > 0) {
-          const prioritized = prioritizeSuggestions(data.suggestions);
-          const topSuggestion = prioritized[0];
-          organizationName = cleanOrganizationName(topSuggestion.title, topSuggestion.link);
-        }
-      } catch (error) {
-        console.warn("Could not fetch official name, using user input:", error);
-        // Continue with user-provided name
-      }
-    }
+    // Use the original user query as the organization name
+    // This ensures accurate search results instead of cleaned page titles
+    const organizationName = originalQuery || searchQuery.trim();
 
     // Fetch event dates with comprehensive error handling
     const loadingToast = toast.loading(`Fetching dates for ${organizationName}...`);
@@ -220,6 +201,7 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       // Success - update state and notify user
       onAdd(newOrg);
       setSearchQuery("");
+      setOriginalQuery("");
       setSuggestions([]);
       setShouldFetchSuggestions(true);
       onSearchPerformed?.();
@@ -297,6 +279,10 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
 
   const handleSelectSuggestion = (suggestion: SearchSuggestion) => {
     setShouldFetchSuggestions(false); // Stop fetching suggestions after selection
+    // Store original query before suggestion was selected
+    if (!originalQuery) {
+      setOriginalQuery(searchQuery);
+    }
     const cleanName = cleanOrganizationName(suggestion.title, suggestion.link);
     setSearchQuery(cleanName);
     setShowSuggestions(false);
@@ -312,7 +298,13 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
             type="text"
             placeholder="Search schools or enter URL..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              // Reset original query when user types again after selecting a suggestion
+              if (originalQuery && e.target.value !== searchQuery) {
+                setOriginalQuery("");
+              }
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="pl-10 h-11 text-sm"
           />
