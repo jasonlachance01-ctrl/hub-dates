@@ -23,7 +23,7 @@ interface OrganizationCardProps {
   organization: Organization;
   onRemove: () => void;
   onUpdate: (updated: Organization) => void;
-  onAddToCalendar: (orgId: string) => void;
+  onAddToCalendar: (orgId: string, onSuccess: () => void) => void;
 }
 
 const OrganizationCard = ({
@@ -51,6 +51,10 @@ const OrganizationCard = ({
   };
 
   const handleAddEvent = (eventId: string) => {
+    const event = organization.events.find(e => e.id === eventId);
+    // Don't allow toggling already synced events
+    if (event?.syncedToCalendar) return;
+    
     const updatedEvents = organization.events.map(event =>
       event.id === eventId
         ? { ...event, addedToCalendar: !event.addedToCalendar }
@@ -63,18 +67,35 @@ const OrganizationCard = ({
   };
 
   const handleAddToCalendar = () => {
-    const selectedEvents = organization.events.filter((e) => e.addedToCalendar && e.date);
+    const selectedEvents = organization.events.filter((e) => e.addedToCalendar && !e.syncedToCalendar && e.date);
 
     if (selectedEvents.length === 0) {
       toast.error("Please select at least one event with a date");
       return;
     }
 
-    // All non-paying users should see the pricing dialog first
-    onAddToCalendar(organization.id);
+    setIsSyncing(true);
+    
+    // Call parent with success callback
+    onAddToCalendar(organization.id, () => {
+      // Mark selected events as synced
+      const updatedEvents = organization.events.map(event =>
+        event.addedToCalendar && !event.syncedToCalendar
+          ? { ...event, syncedToCalendar: true, addedToCalendar: false }
+          : event
+      );
+      onUpdate({
+        ...organization,
+        events: updatedEvents,
+      });
+      setIsSyncing(false);
+      toast.success("Events synced to calendar!");
+    });
   };
 
-  const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar);
+  const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar && !e.syncedToCalendar);
+  const allEventsSynced = organization.events.every((e) => e.syncedToCalendar);
+  const hasUnsyncedEvents = organization.events.some((e) => !e.syncedToCalendar);
 
   return (
     <>
@@ -123,19 +144,23 @@ const OrganizationCard = ({
                       New!
                     </Badge>
                   )}
+                  {event.syncedToCalendar && (
+                    <span className="text-[10px] text-muted-foreground/60">Added</span>
+                  )}
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => handleAddEvent(event.id)}
+                disabled={event.syncedToCalendar}
                 className={`h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 transition-colors ${
-                  event.addedToCalendar
+                  event.addedToCalendar || event.syncedToCalendar
                     ? "bg-success hover:bg-success/90 text-success-foreground"
                     : "hover:bg-accent"
-                }`}
+                } ${event.syncedToCalendar ? "opacity-60 cursor-not-allowed" : ""}`}
               >
-                {event.addedToCalendar ? (
+                {event.addedToCalendar || event.syncedToCalendar ? (
                   <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 ) : (
                   <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -149,9 +174,13 @@ const OrganizationCard = ({
           <Button
             onClick={handleAddToCalendar}
             className="w-full text-sm"
-            disabled={!hasSelectedEvents || isSyncing}
+            disabled={!hasSelectedEvents || isSyncing || allEventsSynced}
           >
-            {isSyncing ? "Downloading..." : "Sync to Calendar"}
+            {isSyncing 
+              ? "Downloading..." 
+              : allEventsSynced 
+                ? "All Events Added" 
+                : "Sync to Calendar"}
           </Button>
         </CardFooter>
       </Card>
