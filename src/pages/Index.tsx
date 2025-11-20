@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
+import { Input } from "@/components/ui/input";
 import { Organization } from "@/types";
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [pendingOrg, setPendingOrg] = useState<Organization | null>(null);
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null);
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [calendarConnected, setCalendarConnected] = useState(() => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
@@ -89,6 +92,22 @@ const Index = () => {
           <p className="text-sm text-muted-foreground leading-relaxed mt-2">
             Include City and State for accurate results
           </p>
+          <div className="flex gap-3 mt-4 max-w-sm mx-auto">
+            <Input
+              type="text"
+              placeholder="City"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="h-11 text-sm"
+            />
+            <Input
+              type="text"
+              placeholder="State"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="h-11 text-sm"
+            />
+          </div>
         </div>
       </section>
 
