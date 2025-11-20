@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
 import { Organization } from "@/types";
 import EmailPromptDialog from "./EmailPromptDialog";
+
+// Admin mode helper for testing - checks localStorage flag
+const isAdminMode = () => localStorage.getItem('adminMode') === 'true';
 
 interface OnboardingDialogProps {
   open: boolean;
@@ -24,6 +27,17 @@ const OnboardingDialog = ({
 }: OnboardingDialogProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+
+  // Check for admin mode URL parameter on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      localStorage.setItem('adminMode', 'true');
+      toast.success("Admin mode enabled - unlimited downloads for testing");
+      // Clean up URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -58,9 +72,9 @@ const OnboardingDialog = ({
       return;
     }
 
-    // Check 1-organization limit for Starter Plan
+    // Check 1-organization limit for Starter Plan (skip for admin mode)
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
-    if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
+    if (!isAdminMode() && !syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
       toast.error("To add dates for more than one organization upgrade to the Step Up Plan.");
       return;
     }
