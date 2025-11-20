@@ -90,7 +90,7 @@ const Index = () => {
             Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their calendar to import into your own!
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-            Include City and State for accurate results
+            Include City and State for accurate results.
           </p>
           <div className="flex gap-3 mt-4 max-w-sm mx-auto">
             <Input
