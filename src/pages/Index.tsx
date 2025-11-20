@@ -96,7 +96,7 @@ const Index = () => {
       </section>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col px-4 pb-6 overflow-hidden">
+      <main className="flex-1 flex flex-col px-4 pb-6 pt-8 md:pt-0 overflow-hidden">
         <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
           {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-end pb-20">
               <div className="w-full space-y-8 mb-8">
