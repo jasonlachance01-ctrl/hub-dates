@@ -109,7 +109,7 @@ Only include future dates (on or after today).`
           },
           { 
             role: 'user', 
-            content: `Find all academic calendar dates for ${organizationName} for the ${schoolYearStart}-${schoolYearEnd} school year` 
+            content: `${organizationName} academic calendar ${schoolYearStart}-${schoolYearEnd}` 
           }
         ],
         max_tokens: 4000
