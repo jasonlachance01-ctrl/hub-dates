@@ -31,7 +31,7 @@ const Index = () => {
     const org = organizations.find(o => o.id === orgId);
     if (org) {
       setPendingOrg(org);
-      setPendingCallback(() => onSuccess);
+      setPendingCallback(() => onSuccess());
       setShowOnboarding(true);
     }
   };
