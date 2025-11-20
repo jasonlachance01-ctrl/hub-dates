@@ -89,7 +89,7 @@ const Index = () => {
             <p className="font-bold leading-tight italic text-primary text-center font-serif text-4xl">in one Place!</p>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Enter the name or URL of any School, Organization, or Team to add to your feed then select the important dates from their calendar to import into your own!
+            Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their calendar to import into your own!
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mt-2">
             When searching for schools include City name for accurate results.
