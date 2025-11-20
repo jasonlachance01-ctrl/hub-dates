@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['icon-option-6-blue.png'],
       manifest: {
-        name: 'Calsync',
-        short_name: 'Calsync',
+        name: 'Academic Annual',
+        short_name: 'Academic Annual',
         description: 'Subscribe to all your events in one place',
         theme_color: '#4A90E2',
         background_color: '#ffffff',

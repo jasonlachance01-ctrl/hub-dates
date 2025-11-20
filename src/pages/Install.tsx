@@ -42,13 +42,13 @@ const Install = () => {
           <div className="mx-auto mb-4 w-24 h-24 rounded-3xl overflow-hidden shadow-lg">
             <img 
               src="/icon-option-6-blue.png" 
-              alt="Calsync Icon" 
+              alt="Academic Annual Icon" 
               className="w-full h-full object-cover"
             />
           </div>
-          <CardTitle className="text-2xl">Install Calsync</CardTitle>
+          <CardTitle className="text-2xl">Install Academic Annual</CardTitle>
           <CardDescription>
-            Add Calsync to your home screen for quick access to all your event subscriptions
+            Add Academic Annual to your home screen for quick access to all your event subscriptions
           </CardDescription>
         </CardHeader>
         
