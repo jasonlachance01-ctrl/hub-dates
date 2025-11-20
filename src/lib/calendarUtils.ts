@@ -111,9 +111,9 @@ export const generateICalendarFile = (
 };
 
 /**
- * Triggers automatic opening of .ics file (opens calendar app directly)
- * On mobile: Downloads and automatically prompts to open in calendar app
- * On desktop: Downloads file which user can open
+ * Downloads .ics file and attempts to auto-open in calendar app
+ * Creates a seamless experience where the file opens immediately after download
+ * User just needs to confirm/save the events in their calendar app
  */
 export const downloadICalendarFile = (
   organizationName: string,
@@ -121,16 +121,30 @@ export const downloadICalendarFile = (
 ): void => {
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
   const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  const filename = `${sanitizeFilename(organizationName)}-calendar.ics`;
   
-  link.href = url;
-  link.download = `${sanitizeFilename(organizationName)}-calendar.ics`;
+  // Try to open the file directly (works on many mobile devices)
+  // This often triggers the calendar app to open immediately
+  const openWindow = window.open(url, '_blank');
   
-  // Append to body, click, then cleanup
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Cleanup the blob URL
-  window.URL.revokeObjectURL(url);
+  // If popup was blocked or on desktop, trigger download
+  // The download will appear and user can click to open
+  setTimeout(() => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    
+    // Append to body, click, then cleanup
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Cleanup the blob URL after a delay
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      if (openWindow && !openWindow.closed) {
+        openWindow.close();
+      }
+    }, 100);
+  }, 100);
 };

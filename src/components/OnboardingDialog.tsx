@@ -92,7 +92,7 @@ const OnboardingDialog = ({
         localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
       }
 
-      toast.success("Calendar file downloaded! Open it to add events to your calendar.");
+      toast.success("Calendar ready! Your calendar app should open automatically. Just tap 'Add' or 'Save' to sync the events.");
       onStarterPlanSelect();
       onClose();
     } catch (error) {
