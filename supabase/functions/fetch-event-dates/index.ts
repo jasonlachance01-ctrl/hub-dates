@@ -29,7 +29,7 @@ serve(async (req) => {
   }
 
   try {
-    const { organizationName } = await req.json();
+    const { organizationName, city = "", state = "" } = await req.json();
     
     if (!organizationName || typeof organizationName !== 'string') {
       return new Response(JSON.stringify({ error: 'Invalid organization name' }), {
@@ -109,7 +109,7 @@ Only include future dates (on or after today).`
           },
           { 
             role: 'user', 
-            content: `${organizationName} academic calendar ${schoolYearStart}-${schoolYearEnd} Include Professional Days.` 
+            content: `${organizationName}${city ? ' ' + city : ''}${state ? ' ' + state : ''} academic calendar ${schoolYearStart}-${schoolYearEnd} Include Professional Days.` 
           }
         ],
         max_tokens: 4000
