@@ -157,7 +157,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes free version of Calsync in-app personal calendar. *Not available in Beta.
+                  Includes free version of Academic Annual in-app personal calendar. *Not available in Beta.
                 </p>
               </div>
             </div>
@@ -196,7 +196,7 @@ const OnboardingDialog = ({
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
                 <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
                 <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes free version of Calsync in-app personal calendar. *Not available in Beta.
+                  Includes free version of Academic Annual in-app personal calendar. *Not available in Beta.
                 </p>
               </div>
             </div>

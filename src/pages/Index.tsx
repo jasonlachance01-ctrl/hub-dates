@@ -64,7 +64,7 @@ const Index = () => {
       <header className="flex-shrink-0 px-4 pt-6 pb-4">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Calsync</h1>
+            <h1 className="text-2xl font-bold text-foreground">Academic Annual</h1>
             <div className="flex items-center gap-2">
               <div className="px-3 py-1 bg-secondary/10 border border-border rounded-full">
                 <span className="text-xs font-semibold text-foreground">

@@ -54,7 +54,7 @@ const IconPreview = () => {
   const handleDownload = (path: string, name: string) => {
     const link = document.createElement('a');
     link.href = path;
-    link.download = `calsync-icon-${name.toLowerCase().replace(/\s+/g, '-')}.png`;
+    link.download = `academic-annual-icon-${name.toLowerCase().replace(/\s+/g, '-')}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -65,7 +65,7 @@ const IconPreview = () => {
       <header className="border-b">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Calsync Icon Options</h1>
+            <h1 className="text-2xl font-bold text-foreground">Academic Annual Icon Options</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Choose your favorite homescreen icon design
             </p>
@@ -148,7 +148,7 @@ const IconPreview = () => {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• Download your preferred icon using the button above</li>
             <li>• Icons are 512x512px, perfect for PWA and app store submissions</li>
-            <li>• These will appear when users add Calsync to their homescreen</li>
+            <li>• These will appear when users add Academic Annual to their homescreen</li>
             <li>• All icons follow modern design principles with clean, minimalist aesthetics</li>
           </ul>
         </div>
