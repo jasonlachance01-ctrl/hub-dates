@@ -182,12 +182,14 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
         throw new Error('No data received from server');
       }
 
-      const events = (data.eventDates || []).map((ed: any, index: number) => ({
-        id: `${ed.eventName.toLowerCase().replace(/\s+/g, '-')}-${index}`,
-        name: ed.eventName,
-        date: ed.date,
-        addedToCalendar: false
-      }));
+      const events = (data.eventDates || [])
+        .filter((ed: any) => ed.date)
+        .map((ed: any, index: number) => ({
+          id: `${ed.eventName.toLowerCase().replace(/\s+/g, '-')}-${index}`,
+          name: ed.eventName,
+          date: ed.date,
+          addedToCalendar: false
+        }));
 
       // Create organization object
       const newOrg: Organization = {
