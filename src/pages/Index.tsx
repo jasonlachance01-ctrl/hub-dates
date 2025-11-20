@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
+import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Organization } from "@/types";
 const Index = () => {
@@ -146,6 +147,9 @@ const Index = () => {
       setPendingOrg(null);
       setPendingCallback(null);
     }} onConnect={handleCalendarConnect} onStarterPlanSelect={handleStarterPlanSelect} pendingOrg={pendingOrg} />
+
+      {/* Footer */}
+      <Footer />
     </div>;
 };
 export default Index;
