@@ -109,7 +109,7 @@ Only include future dates (on or after today).`
           },
           { 
             role: 'user', 
-            content: `${organizationName} academic calendar ${schoolYearStart}-${schoolYearEnd}` 
+            content: `${organizationName} academic calendar ${schoolYearStart}-${schoolYearEnd} Include Professional Days.` 
           }
         ],
         max_tokens: 4000
