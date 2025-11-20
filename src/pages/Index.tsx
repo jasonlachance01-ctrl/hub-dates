@@ -116,7 +116,7 @@ const Index = () => {
         <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
           {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-end pb-20">
               <div className="w-full space-y-8 mb-8">
-                <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
+                <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} city={city} state={state} />
                 <div className="text-center space-y-3 px-6">
                   <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +132,7 @@ const Index = () => {
                 </div>
               </div>
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
-              <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
+              <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} city={city} state={state} />
               <div className="mt-8">
         <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} onAddToCalendar={handleAddToCalendar} />
               </div>

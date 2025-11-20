@@ -12,6 +12,8 @@ import { validateOrganizationInput } from "@/lib/validation";
 interface SearchBarProps {
   onAdd: (organization: Organization) => void;
   onSearchPerformed?: () => void;
+  city?: string;
+  state?: string;
 }
 
 interface SearchSuggestion {
@@ -20,7 +22,7 @@ interface SearchSuggestion {
   snippet: string;
 }
 
-const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
+const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrgName, setSelectedOrgName] = useState(""); // Store cleaned name when suggestion is selected
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -161,7 +163,11 @@ const SearchBar = ({ onAdd, onSearchPerformed }: SearchBarProps) => {
       );
 
       const fetchPromise = supabase.functions.invoke("fetch-event-dates", {
-        body: { organizationName }
+        body: { 
+          organizationName,
+          city: city.trim(),
+          state: state.trim()
+        }
       });
 
       const { data, error } = await Promise.race([
