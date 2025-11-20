@@ -3,7 +3,6 @@ import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
 import { Organization } from "@/types";
-
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -35,7 +34,6 @@ const Index = () => {
       setShowOnboarding(true);
     }
   };
-  
   const handleStarterPlanSelect = () => {
     setShowOnboarding(false);
     setPendingOrg(null);
@@ -44,7 +42,6 @@ const Index = () => {
       setPendingCallback(null);
     }
   };
-  
   const handleCalendarConnect = () => {
     setCalendarConnected(true);
     setShowOnboarding(false);
@@ -52,13 +49,11 @@ const Index = () => {
     localStorage.setItem('calendarConnected', 'true');
     setPendingOrg(null);
   };
-
   const handleSearchPerformed = () => {
     const newCount = userCount + 1;
     setUserCount(newCount);
     localStorage.setItem('userCount', newCount.toString());
   };
-
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header Section */}
       <header className="flex-shrink-0 px-4 pt-6 pb-4">
@@ -92,7 +87,7 @@ const Index = () => {
             Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their calendar to import into your own!
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-            When searching for schools include City name for accurate results.
+            Include City and State for accurate re                    
           </p>
         </div>
       </section>
@@ -120,29 +115,18 @@ const Index = () => {
             </div> : <div className="flex flex-col justify-end pb-20 space-y-8">
               <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} />
               <div className="mt-8">
-        <OrganizationCarousel
-          organizations={organizations}
-          onRemove={handleRemoveOrganization}
-          onUpdate={handleUpdateOrganization}
-          onAddToCalendar={handleAddToCalendar}
-        />
+        <OrganizationCarousel organizations={organizations} onRemove={handleRemoveOrganization} onUpdate={handleUpdateOrganization} onAddToCalendar={handleAddToCalendar} />
               </div>
             </div>}
         </div>
       </main>
 
       {/* Onboarding Dialog */}
-      <OnboardingDialog 
-        open={showOnboarding} 
-        onClose={() => {
-          setShowOnboarding(false);
-          setPendingOrg(null);
-          setPendingCallback(null);
-        }}
-        onConnect={handleCalendarConnect}
-        onStarterPlanSelect={handleStarterPlanSelect}
-        pendingOrg={pendingOrg}
-      />
+      <OnboardingDialog open={showOnboarding} onClose={() => {
+      setShowOnboarding(false);
+      setPendingOrg(null);
+      setPendingCallback(null);
+    }} onConnect={handleCalendarConnect} onStarterPlanSelect={handleStarterPlanSelect} pendingOrg={pendingOrg} />
     </div>;
 };
 export default Index;
