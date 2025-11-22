@@ -89,11 +89,12 @@ const OnboardingDialog = ({
     proceedWithDownload();
   };
 
-  const proceedWithDownload = () => {
+  const proceedWithDownload = async () => {
     if (!pendingOrg) return;
 
     const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
+    const isFirstDownload = syncedOrgs.length === 0;
 
     // Generate and download .ics file
     try {
@@ -104,6 +105,29 @@ const OnboardingDialog = ({
       if (!syncedOrgs.includes(pendingOrg.id)) {
         syncedOrgs.push(pendingOrg.id);
         localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
+      }
+
+      // Send welcome email via Loops on first download
+      if (isFirstDownload) {
+        const userEmail = localStorage.getItem('userEmail');
+        if (userEmail) {
+          try {
+            await supabase.functions.invoke("send-loops-event", {
+              body: {
+                email: userEmail,
+                eventName: "first_download",
+                eventProperties: {
+                  organizationName: pendingOrg.name,
+                  eventCount: selectedEvents.length
+                }
+              }
+            });
+            console.log("Welcome email event sent to Loops");
+          } catch (error) {
+            console.error("Error sending Loops event:", error);
+            // Don't show error to user - this is a background operation
+          }
+        }
       }
 
       toast.success("Calendar ready! Your calendar app should open automatically. Just tap 'Add' or 'Save' to sync the events.");
