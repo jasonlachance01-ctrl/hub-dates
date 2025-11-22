@@ -46,6 +46,19 @@ const EmailPromptDialog = ({ open, onEmailSubmit, onClose }: EmailPromptDialogPr
       // Store email in localStorage for future reference
       localStorage.setItem('userEmail', email.trim());
       
+      // Add contact to Loops.so
+      try {
+        await supabase.functions.invoke('add-loops-contact', {
+          body: {
+            email: email.trim(),
+            source: 'calendar_sync'
+          }
+        });
+      } catch (loopsError) {
+        console.error("Error adding to Loops:", loopsError);
+        // Don't block the flow if Loops fails
+      }
+      
       onEmailSubmit(email.trim());
     } catch (error) {
       console.error("Error saving email:", error);
