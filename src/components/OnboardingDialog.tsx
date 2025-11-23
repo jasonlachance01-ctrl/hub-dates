@@ -72,9 +72,15 @@ const OnboardingDialog = ({
       return;
     }
 
-    // Check 1-organization limit for Starter Plan (skip for admin mode)
+    // In admin mode, always treat as first-time user (bypass all checks)
+    if (isAdminMode()) {
+      proceedWithDownload();
+      return;
+    }
+
+    // Check 1-organization limit for Starter Plan
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
-    if (!isAdminMode() && !syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
+    if (!syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
       toast.error("To add dates for more than one organization upgrade to the Graduate Plan.");
       return;
     }
