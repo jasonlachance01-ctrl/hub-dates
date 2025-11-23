@@ -75,7 +75,7 @@ const OnboardingDialog = ({
     // Check 1-organization limit for Starter Plan (skip for admin mode)
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
     if (!isAdminMode() && !syncedOrgs.includes(pendingOrg.id) && syncedOrgs.length >= 1) {
-      toast.error("To add dates for more than one organization upgrade to the Step Up Plan.");
+      toast.error("To add dates for more than one organization upgrade to the Graduate Plan.");
       return;
     }
 
@@ -201,10 +201,10 @@ const OnboardingDialog = ({
             </div>
           </div>
 
-          {/* Step Up Plan */}
+          {/* Graduate Plan */}
           <div className="space-y-2">
             <h3 className="text-center font-bold text-sm sm:text-base md:text-lg text-foreground">
-              Step Up Plan - $25/year
+              Graduate Plan - $25/year
             </h3>
             <div className="space-y-1.5">
               <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
@@ -247,7 +247,7 @@ const OnboardingDialog = ({
             className="w-full text-[11px] sm:text-xs md:text-sm leading-tight py-2.5 sm:py-2 md:py-2.5 h-auto px-2"
           >
             <span className="break-words text-center w-full">
-              Upgrade to unlimited feed selections with Step Up Plan
+              Upgrade to unlimited feed selections with Graduate Plan
             </span>
           </Button>
           <Button 
