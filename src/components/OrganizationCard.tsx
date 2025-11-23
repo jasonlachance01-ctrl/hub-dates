@@ -89,7 +89,6 @@ const OrganizationCard = ({
         events: updatedEvents,
       });
       setIsSyncing(false);
-      toast.success("Events synced to calendar!");
     });
   };
 
