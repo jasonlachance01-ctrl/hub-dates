@@ -5,6 +5,7 @@ import OnboardingDialog from "@/components/OnboardingDialog";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Organization } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -16,11 +17,42 @@ const Index = () => {
     // Check localStorage to see if calendar was already connected
     return localStorage.getItem('calendarConnected') === 'true';
   });
-  const [userCount, setUserCount] = useState(() => {
-    // Get user count from localStorage
-    const stored = localStorage.getItem('userCount');
-    return stored ? parseInt(stored, 10) : 0;
-  });
+  const [userCount, setUserCount] = useState(0);
+
+  // Fetch real user count from database
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      const { count, error } = await supabase
+        .from('user_emails')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!error && count !== null) {
+        setUserCount(count);
+      }
+    };
+
+    fetchUserCount();
+
+    // Set up realtime subscription for user count updates
+    const channel = supabase
+      .channel('user-emails-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'user_emails'
+        },
+        () => {
+          fetchUserCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   const handleAddOrganization = (org: Organization) => {
     setOrganizations(prev => [...prev, org]);
   };
@@ -54,9 +86,7 @@ const Index = () => {
     setPendingOrg(null);
   };
   const handleSearchPerformed = () => {
-    const newCount = userCount + 1;
-    setUserCount(newCount);
-    localStorage.setItem('userCount', newCount.toString());
+    // No longer needed - user count is fetched from database
   };
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header Section */}
