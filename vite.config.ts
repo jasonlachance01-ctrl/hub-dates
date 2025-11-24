@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-option-6-blue.png'],
+      includeAssets: ['app-icon.png'],
       manifest: {
         name: 'Academic Annual',
         short_name: 'Academic Annual',
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         icons: [
           {
-            src: '/icon-option-6-blue.png',
+            src: '/app-icon.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
