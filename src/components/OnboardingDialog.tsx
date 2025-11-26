@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -154,6 +154,15 @@ const OnboardingDialog = ({
     toast.info("Payment processing coming soon!");
   };
 
+  const PlanFeature = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex items-start gap-2 py-1.5">
+      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+        {children}
+      </p>
+    </div>
+  );
+
   return (
     <>
       <EmailPromptDialog
@@ -163,113 +172,83 @@ const OnboardingDialog = ({
       />
       
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="w-[88vw] max-w-[420px] mx-auto sm:w-full sm:max-w-lg md:max-w-2xl p-4 sm:p-6">
-        <DialogHeader className="space-y-2">
-          <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center flex-shrink-0">
-            <img src="/icon-option-6-blue.png" alt="App Icon" className="w-full h-full rounded-2xl" />
-          </div>
-          <DialogTitle className="text-center text-sm sm:text-base md:text-lg leading-snug break-words hyphens-auto px-2">
-            You are almost to the most effortless and rewarding calendar management you have ever experienced! You will never miss your important dates.
-          </DialogTitle>
-        </DialogHeader>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md mx-auto p-4 sm:p-6 max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="space-y-3 flex-shrink-0">
+            <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+              <img src="/icon-option-6-blue.png" alt="App Icon" className="w-full h-full rounded-xl" />
+            </div>
+            <DialogTitle className="text-center text-sm sm:text-base font-semibold leading-relaxed px-1">
+              You're almost there! Never miss your important dates again.
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4 pb-2 sm:pb-3 overflow-y-auto max-h-[50vh]">
-          {/* Starter Plan */}
-          <div className="space-y-2">
-            <h3 className="text-center font-bold text-sm sm:text-base md:text-lg text-foreground">
-              Starter Plan - Free
-            </h3>
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes <strong>one</strong> school selection in your feed.
-                </p>
+          <div className="flex-1 overflow-y-auto space-y-4 py-3 min-h-0">
+            {/* Starter Plan */}
+            <div className="rounded-lg border border-border/50 bg-accent/5 p-3 sm:p-4">
+              <h3 className="text-center font-bold text-sm sm:text-base text-foreground mb-3">
+                Starter Plan – Free
+              </h3>
+              <div className="space-y-0.5">
+                <PlanFeature>
+                  <strong>One</strong> school selection in your feed
+                </PlanFeature>
+                <PlanFeature>
+                  Sync your selected events now – just tap Connect Calendar
+                </PlanFeature>
+                <PlanFeature>
+                  Get notified of changes or new events
+                </PlanFeature>
+                <PlanFeature>
+                  Free in-app personal calendar <span className="text-muted-foreground/70">*Coming soon</span>
+                </PlanFeature>
               </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Begin your Starter plan now by syncing your already selected event dates. Just hit the Connect Calendar Now button to sync events. Or return to your home screen to select a different school.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes notifications of changes or new events to your feed selections.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes free version of Academic Annual in-app personal calendar. *Not available in Beta.
-                </p>
+            </div>
+
+            {/* Graduate Plan */}
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4">
+              <h3 className="text-center font-bold text-sm sm:text-base text-foreground mb-3">
+                Graduate Plan – $25/year
+              </h3>
+              <div className="space-y-0.5">
+                <PlanFeature>
+                  <strong>Unlimited</strong> school selections in your feed
+                </PlanFeature>
+                <PlanFeature>
+                  Add <strong>athletic team schedules</strong> for your schools
+                </PlanFeature>
+                <PlanFeature>
+                  <strong>Share</strong> saved events with family and friends
+                </PlanFeature>
+                <PlanFeature>
+                  Get notified of changes or new events
+                </PlanFeature>
+                <PlanFeature>
+                  Free in-app personal calendar <span className="text-muted-foreground/70">*Coming soon</span>
+                </PlanFeature>
               </div>
             </div>
           </div>
 
-          {/* Graduate Plan */}
-          <div className="space-y-2">
-            <h3 className="text-center font-bold text-sm sm:text-base md:text-lg text-foreground">
-              Graduate Plan - $25/year
-            </h3>
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes <strong>unlimited</strong> school selections in your feed.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes option to add <strong>athletic team schedules</strong> for your selected schools.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  <strong>Share</strong> your saved event dates with family and friends.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes notifications of changes or new events to your feed selections.
-                </p>
-              </div>
-              <div className="flex items-start gap-1.5 sm:gap-2 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg bg-accent/5">
-                <div className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground flex-1 break-words leading-snug">
-                  Includes free version of Academic Annual in-app personal calendar. *Not available in Beta.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="flex-col gap-2 pt-2">
-          <Button 
-            onClick={handleStepUp}
-            className="w-full text-[11px] sm:text-xs md:text-sm leading-tight py-2.5 sm:py-2 md:py-2.5 h-auto px-2"
-          >
-            <span className="break-words text-center w-full">
-              Upgrade to unlimited feed selections with Graduate Plan
-            </span>
-          </Button>
-          <Button 
-            onClick={handleStarterPlan} 
-            className="w-full text-[11px] sm:text-xs leading-tight py-2.5 sm:py-2 h-auto px-2"
-          >
-            <span className="break-words text-center w-full">
-              Connect Calendar Now with FREE Starter Plan
-            </span>
-          </Button>
-          <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground text-center w-full pt-2">
-            All data stays private and secure
-          </p>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter className="flex-col gap-2 pt-3 flex-shrink-0 border-t border-border/30">
+            <Button 
+              onClick={handleStepUp}
+              variant="outline"
+              className="w-full text-xs sm:text-sm py-2.5 h-auto font-medium"
+            >
+              Upgrade to Graduate Plan
+            </Button>
+            <Button 
+              onClick={handleStarterPlan} 
+              className="w-full text-xs sm:text-sm py-2.5 h-auto font-medium"
+            >
+              Connect Calendar – Free
+            </Button>
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center pt-1">
+              All data stays private and secure
+            </p>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
