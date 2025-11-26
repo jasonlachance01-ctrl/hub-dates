@@ -229,7 +229,7 @@ const OnboardingDialog = ({
             </div>
           </div>
 
-          <DialogFooter className="flex-col gap-2 pt-3 flex-shrink-0 border-t border-border/30">
+          <DialogFooter className="flex flex-col items-center gap-2 pt-3 flex-shrink-0 border-t border-border/30 sm:flex-col">
             <Button 
               onClick={handleStepUp}
               variant="outline"
@@ -243,7 +243,7 @@ const OnboardingDialog = ({
             >
               Connect Calendar – Free
             </Button>
-            <p className="text-[10px] sm:text-xs text-muted-foreground text-center pt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center pt-1 w-full">
               All data stays private and secure
             </p>
           </DialogFooter>
