@@ -22,33 +22,27 @@ const Index = () => {
   // Fetch real user count from database
   useEffect(() => {
     const fetchUserCount = async () => {
-      const { count, error } = await supabase
-        .from('user_emails')
-        .select('*', { count: 'exact', head: true });
-      
+      const {
+        count,
+        error
+      } = await supabase.from('user_emails').select('*', {
+        count: 'exact',
+        head: true
+      });
       if (!error && count !== null) {
         setUserCount(count);
       }
     };
-
     fetchUserCount();
 
     // Set up realtime subscription for user count updates
-    const channel = supabase
-      .channel('user-emails-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_emails'
-        },
-        () => {
-          fetchUserCount();
-        }
-      )
-      .subscribe();
-
+    const channel = supabase.channel('user-emails-changes').on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'user_emails'
+    }, () => {
+      fetchUserCount();
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
@@ -124,20 +118,8 @@ const Index = () => {
             Include City and State for accurate results.
           </p>
           <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4 max-w-sm mx-auto">
-            <Input
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="h-10 sm:h-11 text-xs sm:text-sm"
-            />
-            <Input
-              type="text"
-              placeholder="State"
-              value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="h-10 sm:h-11 text-xs sm:text-sm"
-            />
+            <Input type="text" placeholder="City" value={city} onChange={e => setCity(e.target.value)} className="h-10 sm:h-11 text-xs sm:text-sm" />
+            <Input type="text" placeholder="State" value={state} onChange={e => setState(e.target.value)} className="h-10 sm:h-11 text-xs sm:text-sm" />
           </div>
         </div>
       </section>
@@ -145,7 +127,7 @@ const Index = () => {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col px-4 pb-6 overflow-y-auto overscroll-contain md:pt-0">
         <div className="max-w-md mx-auto w-full flex-1 flex flex-col min-h-0">
-          {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-end pb-16 sm:pb-20 pt-4">
+          {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-start pb-16 sm:pb-20 pt-4">
               <div className="w-full space-y-6 sm:space-y-8 mb-6 sm:mb-8">
                 <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} city={city} state={state} />
                 <div className="text-center space-y-3 px-4 sm:px-6">
