@@ -301,7 +301,7 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="Search schools or enter URL..."
+            placeholder="Search school name or enter URL..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
