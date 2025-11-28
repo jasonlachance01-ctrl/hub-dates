@@ -296,9 +296,9 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
 
   return (
     <>
-      <div ref={searchRef} className="relative flex gap-2 px-2 sm:px-0">
+      <div ref={searchRef} className="relative flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
             placeholder="Search schools or enter URL..."
@@ -312,11 +312,11 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
               }
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="pl-10 h-11 text-sm"
+            className="pl-9 sm:pl-10 h-10 sm:h-11 text-xs sm:text-sm"
           />
           
           {showSuggestions && suggestions.length > 0 && (
-            <Card className="absolute top-full mt-2 w-full z-50 max-h-[60vh] sm:max-h-96 overflow-y-auto bg-background">
+            <Card className="absolute top-full mt-2 w-full z-50 max-h-[50vh] sm:max-h-96 overflow-y-auto bg-background shadow-lg border-2">
               {suggestions.map((suggestion, index) => {
                 const isOfficialSite = suggestion.link.includes('.edu') || 
                                        suggestion.link.match(/\b(school|academy|college|university)\b/i);
@@ -347,13 +347,13 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
           
           {isLoading && (
             <div className="absolute top-full mt-2 w-full z-50">
-              <Card className="p-3 text-center text-xs sm:text-sm text-muted-foreground bg-background">
+              <Card className="p-2.5 sm:p-3 text-center text-xs sm:text-sm text-muted-foreground bg-background shadow-lg border-2">
                 Loading suggestions...
               </Card>
             </div>
           )}
         </div>
-        <Button onClick={handleSearch} size="lg" className="px-4 sm:px-6 text-sm">
+        <Button onClick={handleSearch} size="lg" className="px-3 sm:px-4 md:px-6 text-xs sm:text-sm h-10 sm:h-11 whitespace-nowrap">
           Add
         </Button>
       </div>
