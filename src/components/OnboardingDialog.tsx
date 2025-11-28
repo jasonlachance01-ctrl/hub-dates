@@ -206,7 +206,7 @@ const OnboardingDialog = ({
                 onClick={handleStarterPlan} 
                 className="w-full text-xs sm:text-sm py-2 h-auto font-medium mt-3"
               >
-                Connect Calendar – Free
+                Starter Plan - Connect 1 calendar
               </Button>
             </div>
 
@@ -232,18 +232,18 @@ const OnboardingDialog = ({
                   Free in-app personal calendar <span className="text-muted-foreground/70">*Coming soon</span>
                 </PlanFeature>
               </div>
+              <Button 
+                onClick={handleStepUp}
+                variant="outline"
+                className="w-full text-xs sm:text-sm py-2 h-auto font-medium mt-3"
+              >
+                Upgrade to Graduate Plan
+              </Button>
             </div>
           </div>
 
           <DialogFooter className="flex flex-col items-center gap-2 pt-3 flex-shrink-0 border-t border-border/30 sm:flex-col">
-            <Button 
-              onClick={handleStepUp}
-              variant="outline"
-              className="w-full text-xs sm:text-sm py-2.5 h-auto font-medium"
-            >
-              Upgrade to Graduate Plan
-            </Button>
-            <p className="text-[10px] sm:text-xs text-muted-foreground text-center pt-1 w-full">
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center w-full">
               All data stays private and secure
             </p>
           </DialogFooter>
