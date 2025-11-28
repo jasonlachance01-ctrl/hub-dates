@@ -234,10 +234,9 @@ const OnboardingDialog = ({
               </div>
               <Button 
                 onClick={handleStepUp}
-                variant="outline"
                 className="w-full text-xs sm:text-sm py-2 h-auto font-medium mt-3"
               >
-                Upgrade to Graduate Plan
+                Graduate Plan - Connect Unlimited calendars
               </Button>
             </div>
           </div>
