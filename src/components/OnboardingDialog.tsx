@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
 import { Organization } from "@/types";
 import EmailPromptDialog from "./EmailPromptDialog";
+import FeedbackDialog from "./FeedbackDialog";
 
 // Admin mode helper for testing - checks localStorage flag
 const isAdminMode = () => localStorage.getItem('adminMode') === 'true';
@@ -27,6 +28,7 @@ const OnboardingDialog = ({
 }: OnboardingDialogProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   // Check for admin mode URL parameter on mount
   useEffect(() => {
@@ -101,6 +103,7 @@ const OnboardingDialog = ({
     const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
     const isFirstDownload = syncedOrgs.length === 0;
+    const hasGivenFeedback = localStorage.getItem('hasGivenFeedback') === 'true';
 
     // Generate and download .ics file
     try {
@@ -139,6 +142,13 @@ const OnboardingDialog = ({
       toast.success("Calendar ready! Your calendar app should open automatically. Just tap 'Add' or 'Save' to sync the events.");
       onStarterPlanSelect();
       onClose();
+      
+      // Show feedback dialog after first download if user hasn't given feedback
+      if (isFirstDownload && !hasGivenFeedback) {
+        setTimeout(() => {
+          setShowFeedbackDialog(true);
+        }, 1000);
+      }
     } catch (error) {
       console.error("Error generating calendar file:", error);
       toast.error("Failed to generate calendar file. Please try again.");
@@ -163,12 +173,22 @@ const OnboardingDialog = ({
     </div>
   );
 
+  const handleFeedbackClose = () => {
+    setShowFeedbackDialog(false);
+    localStorage.setItem('hasGivenFeedback', 'true');
+  };
+
   return (
     <>
       <EmailPromptDialog
         open={showEmailPrompt}
         onEmailSubmit={handleEmailSubmit}
         onClose={() => setShowEmailPrompt(false)}
+      />
+      
+      <FeedbackDialog
+        open={showFeedbackDialog}
+        onClose={handleFeedbackClose}
       />
       
       <Dialog open={open} onOpenChange={onClose}>
