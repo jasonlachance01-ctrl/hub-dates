@@ -193,7 +193,7 @@ const OnboardingDialog = ({
                   <strong>One</strong> school selection in your feed
                 </PlanFeature>
                 <PlanFeature>
-                  Sync your selected events now – just tap Connect Calendar
+                  Sync your already selected events now - just tap Connect Calendar
                 </PlanFeature>
                 <PlanFeature>
                   Get notified of changes or new events
