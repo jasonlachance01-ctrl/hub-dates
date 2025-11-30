@@ -111,9 +111,7 @@ const Index = () => {
             <h2 className="font-bold leading-tight text-neutral-700 text-2xl sm:text-3xl md:text-4xl font-serif">Subscribe to all of Your School Year Events</h2>
             <p className="font-bold leading-tight italic text-primary text-center font-serif text-2xl sm:text-3xl md:text-4xl">in one Place!</p>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their calendar to import into your own!
-          </p>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their academic calendar to import into your own!</p>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-2">
             Include City and State for accurate results.
           </p>
