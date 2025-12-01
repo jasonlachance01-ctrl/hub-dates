@@ -11,6 +11,11 @@ interface SendEmailRequest {
   transactionalId: string;
   email: string;
   dataVariables?: Record<string, any>;
+  attachments?: Array<{
+    filename: string;
+    contentType: string;
+    data: string; // base64 encoded content
+  }>;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,9 +25,20 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { transactionalId, email, dataVariables }: SendEmailRequest = await req.json();
+    const { transactionalId, email, dataVariables, attachments }: SendEmailRequest = await req.json();
 
-    console.log("Sending transactional email via Loops:", { transactionalId, email });
+    console.log("Sending transactional email via Loops:", { transactionalId, email, hasAttachments: !!attachments });
+
+    const requestBody: any = {
+      transactionalId,
+      email,
+      dataVariables: dataVariables || {},
+    };
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      requestBody.attachments = attachments;
+    }
 
     const response = await fetch("https://app.loops.so/api/v1/transactional", {
       method: "POST",
@@ -30,11 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Authorization": `Bearer ${LOOPS_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        transactionalId,
-        email,
-        dataVariables: dataVariables || {},
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
