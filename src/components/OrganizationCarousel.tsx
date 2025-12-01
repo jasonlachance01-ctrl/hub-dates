@@ -18,12 +18,18 @@ const OrganizationCarousel = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number | null>(null);
+  const prevLengthRef = useRef(organizations.length);
 
   useEffect(() => {
-    // Reset to first card if all cards are removed
-    if (organizations.length > 0 && currentIndex >= organizations.length) {
+    // Reset to first card when a new organization is added
+    if (organizations.length > prevLengthRef.current) {
+      setCurrentIndex(0);
+    }
+    // Reset to last valid card if cards are removed
+    else if (organizations.length > 0 && currentIndex >= organizations.length) {
       setCurrentIndex(organizations.length - 1);
     }
+    prevLengthRef.current = organizations.length;
   }, [organizations.length, currentIndex]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
