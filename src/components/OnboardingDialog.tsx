@@ -134,24 +134,31 @@ const OnboardingDialog = ({
             });
 
             // Send welcome email with .ics attachment
-            const icsBase64 = btoa(unescape(encodeURIComponent(icsContent)));
-            await supabase.functions.invoke("send-loops-email", {
-              body: {
-                transactionalId: "cm5wg0p650003pghevv3f6h5l",
-                email: userEmail,
-                dataVariables: {
-                  organizationName: pendingOrg.name,
-                  eventCount: selectedEvents.length
-                },
-                attachments: [{
-                  filename: `${pendingOrg.name.replace(/[^a-z0-9]/gi, '-')}-calendar.ics`,
-                  contentType: "text/calendar; charset=utf-8",
-                  data: icsBase64
-                }]
-              }
-            });
+            // TODO: Replace with your actual Loops transactional email ID from https://app.loops.so/transactional
+            const LOOPS_TRANSACTIONAL_ID = "YOUR_LOOPS_TRANSACTIONAL_ID"; // Replace this with your actual ID
             
-            console.log("Welcome email with .ics attachment sent to Loops");
+            if (LOOPS_TRANSACTIONAL_ID !== "YOUR_LOOPS_TRANSACTIONAL_ID") {
+              const icsBase64 = btoa(unescape(encodeURIComponent(icsContent)));
+              await supabase.functions.invoke("send-loops-email", {
+                body: {
+                  transactionalId: LOOPS_TRANSACTIONAL_ID,
+                  email: userEmail,
+                  dataVariables: {
+                    organizationName: pendingOrg.name,
+                    eventCount: selectedEvents.length
+                  },
+                  attachments: [{
+                    filename: `${pendingOrg.name.replace(/[^a-z0-9]/gi, '-')}-calendar.ics`,
+                    contentType: "text/calendar; charset=utf-8",
+                    data: icsBase64
+                  }]
+                }
+              });
+              
+              console.log("Welcome email with .ics attachment sent to Loops");
+            } else {
+              console.log("Skipping welcome email - Loops transactional ID not configured");
+            }
           } catch (error) {
             console.error("Error sending Loops email:", error);
             // Don't show error to user - this is a background operation
