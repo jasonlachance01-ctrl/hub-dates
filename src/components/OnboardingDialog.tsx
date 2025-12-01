@@ -121,6 +121,7 @@ const OnboardingDialog = ({
         const userEmail = localStorage.getItem('userEmail');
         if (userEmail) {
           try {
+            // Send event to Loops
             await supabase.functions.invoke("send-loops-event", {
               body: {
                 email: userEmail,
@@ -131,9 +132,28 @@ const OnboardingDialog = ({
                 }
               }
             });
-            console.log("Welcome email event sent to Loops");
+
+            // Send welcome email with .ics attachment
+            const icsBase64 = btoa(unescape(encodeURIComponent(icsContent)));
+            await supabase.functions.invoke("send-loops-email", {
+              body: {
+                transactionalId: "cm5wg0p650003pghevv3f6h5l",
+                email: userEmail,
+                dataVariables: {
+                  organizationName: pendingOrg.name,
+                  eventCount: selectedEvents.length
+                },
+                attachments: [{
+                  filename: `${pendingOrg.name.replace(/[^a-z0-9]/gi, '-')}-calendar.ics`,
+                  contentType: "text/calendar; charset=utf-8",
+                  data: icsBase64
+                }]
+              }
+            });
+            
+            console.log("Welcome email with .ics attachment sent to Loops");
           } catch (error) {
-            console.error("Error sending Loops event:", error);
+            console.error("Error sending Loops email:", error);
             // Don't show error to user - this is a background operation
           }
         }
