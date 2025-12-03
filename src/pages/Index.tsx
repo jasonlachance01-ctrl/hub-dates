@@ -82,7 +82,7 @@ const Index = () => {
   const handleSearchPerformed = () => {
     // No longer needed - user count is fetched from database
   };
-  return <div className="min-h-screen bg-background flex flex-col">
+  return <div className="h-screen bg-background flex flex-col overflow-hidden fixed inset-0 md:static md:h-auto md:min-h-screen md:overflow-visible">
       {/* Header Section */}
       <header className="flex-shrink-0 px-4 pt-safe pt-4 sm:pt-6 pb-3 sm:pb-4">
         <div className="max-w-md mx-auto">
@@ -123,8 +123,8 @@ const Index = () => {
       </section>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col px-4 pb-6">
-        <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col px-4 pb-6 overflow-y-auto overscroll-contain md:pt-0">
+        <div className="max-w-md mx-auto w-full flex-1 flex flex-col min-h-0">
           {organizations.length === 0 ? <div className="flex-1 flex flex-col justify-start pb-16 sm:pb-20 pt-4">
               <div className="w-full space-y-6 sm:space-y-8 mb-6 sm:mb-8">
                 <SearchBar onAdd={handleAddOrganization} onSearchPerformed={handleSearchPerformed} city={city} state={state} />
