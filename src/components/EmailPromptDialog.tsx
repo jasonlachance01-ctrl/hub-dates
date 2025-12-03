@@ -95,7 +95,7 @@ const EmailPromptDialog = ({ open, onEmailSubmit, onClose }: EmailPromptDialogPr
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col gap-2">
             <Button 
               type="submit" 
               className="w-full"
@@ -103,6 +103,9 @@ const EmailPromptDialog = ({ open, onEmailSubmit, onClose }: EmailPromptDialogPr
             >
               {isSubmitting ? "Confirming..." : "Confirm"}
             </Button>
+            <p className="text-[10px] sm:text-xs text-muted-foreground text-center w-full">
+              All data stays private and secure
+            </p>
           </DialogFooter>
         </form>
       </DialogContent>
