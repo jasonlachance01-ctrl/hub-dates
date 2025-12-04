@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { Lock } from "lucide-react";
 
 interface EmailPromptDialogProps {
   open: boolean;
@@ -103,7 +104,8 @@ const EmailPromptDialog = ({ open, onEmailSubmit, onClose }: EmailPromptDialogPr
             >
               {isSubmitting ? "Confirming..." : "Confirm"}
             </Button>
-            <p className="text-[10px] sm:text-xs text-foreground/70 text-center w-full">
+            <p className="text-[10px] sm:text-xs text-foreground/70 text-center w-full flex items-center justify-center gap-1">
+              <Lock className="h-3 w-3" />
               All data stays private and secure
             </p>
           </DialogFooter>
