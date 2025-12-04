@@ -20,6 +20,7 @@ const Index = () => {
   });
   const [userCount, setUserCount] = useState(0);
   const [averageRating, setAverageRating] = useState<number | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
 
   // Fetch real user count and average rating from database
   useEffect(() => {
@@ -43,6 +44,7 @@ const Index = () => {
       
       if (!error && data && data.length > 0) {
         const validRatings = data.filter(d => d.rating !== null);
+        setReviewCount(validRatings.length);
         if (validRatings.length > 0) {
           const avg = validRatings.reduce((sum, d) => sum + (d.rating || 0), 0) / validRatings.length;
           setAverageRating(Math.round(avg * 10) / 10);
@@ -132,7 +134,7 @@ const Index = () => {
                     />
                   ))}
                   <span className="text-[10px] text-foreground/70 ml-1">
-                    {averageRating.toFixed(1)}
+                    ({reviewCount})
                   </span>
                 </div>
               )}
