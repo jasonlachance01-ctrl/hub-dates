@@ -65,7 +65,7 @@ export const generateICalendarFile = (
       return;
     }
     
-    const eventName = `${organizationName} ${event.name}`;
+    const eventName = organizationName ? `${organizationName} ${event.name}` : event.name;
     
     // Extract date components directly to avoid timezone issues
     const year = eventDate.getFullYear();
