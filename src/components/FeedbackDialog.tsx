@@ -74,8 +74,8 @@ const FeedbackDialog = ({ open, onClose }: FeedbackDialogProps) => {
                   <Star
                     className={`w-8 h-8 transition-colors ${
                       star <= (hoveredRating || rating)
-                        ? "fill-primary text-primary"
-                        : "text-muted-foreground"
+                        ? "fill-amber-400 text-amber-400"
+                        : "fill-muted text-muted-foreground/40"
                     }`}
                   />
                 </button>

@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Organization } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { Star } from "lucide-react";
 const Index = () => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -18,8 +19,9 @@ const Index = () => {
     return localStorage.getItem('calendarConnected') === 'true';
   });
   const [userCount, setUserCount] = useState(0);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
 
-  // Fetch real user count from database
+  // Fetch real user count and average rating from database
   useEffect(() => {
     const fetchUserCount = async () => {
       const {
@@ -33,7 +35,23 @@ const Index = () => {
         setUserCount(count);
       }
     };
+
+    const fetchAverageRating = async () => {
+      const { data, error } = await supabase
+        .from('user_feedback')
+        .select('rating');
+      
+      if (!error && data && data.length > 0) {
+        const validRatings = data.filter(d => d.rating !== null);
+        if (validRatings.length > 0) {
+          const avg = validRatings.reduce((sum, d) => sum + (d.rating || 0), 0) / validRatings.length;
+          setAverageRating(Math.round(avg * 10) / 10);
+        }
+      }
+    };
+
     fetchUserCount();
+    fetchAverageRating();
 
     // Set up realtime subscription for user count updates
     const channel = supabase.channel('user-emails-changes').on('postgres_changes', {
@@ -90,15 +108,34 @@ const Index = () => {
             <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">
               Academic<br />Annual
             </h1>
-            <div className="flex items-center gap-2">
-              <div className="px-2 sm:px-3 py-1 bg-secondary/10 border border-border rounded-full">
-                <span className="text-[10px] sm:text-xs font-semibold text-foreground">
-                  Users: {userCount}
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
+                <div className="px-2 sm:px-3 py-1 bg-secondary/10 border border-border rounded-full">
+                  <span className="text-[10px] sm:text-xs font-semibold text-foreground">
+                    Users: {userCount}
+                  </span>
+                </div>
+                <span className="px-2 sm:px-3 py-1 bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold rounded-full">
+                  Beta
                 </span>
               </div>
-              <span className="px-2 sm:px-3 py-1 bg-primary/10 text-primary text-[10px] sm:text-xs font-semibold rounded-full">
-                Beta
-              </span>
+              {averageRating !== null && (
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-3 h-3 ${
+                        star <= Math.round(averageRating)
+                          ? "fill-amber-400 text-amber-400"
+                          : "fill-muted text-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
+                  <span className="text-[10px] text-foreground/70 ml-1">
+                    {averageRating.toFixed(1)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
