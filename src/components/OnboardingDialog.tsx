@@ -45,17 +45,26 @@ const OnboardingDialog = ({
   }, [open, organizations]);
 
   // Get all selected events from all organizations
-  const getAllSelectedEvents = (): { orgName: string; events: EventType[] }[] => {
-    return organizations
+  const getAllSelectedEvents = (orgs: Organization[]): { orgName: string; events: EventType[] }[] => {
+    console.log("getAllSelectedEvents called with organizations:", orgs.map(o => ({
+      name: o.name,
+      events: o.events.map(e => ({ name: e.name, addedToCalendar: e.addedToCalendar, date: e.date }))
+    })));
+    
+    const result = orgs
       .map(org => ({
         orgName: org.name,
-        events: org.events.filter(e => e.addedToCalendar)
+        events: org.events.filter(e => e.addedToCalendar && e.date) // Also filter for events with dates
       }))
       .filter(item => item.events.length > 0);
+    
+    console.log("getAllSelectedEvents result:", result);
+    return result;
   };
 
   const handleStarterPlan = () => {
-    const selectedByOrg = getAllSelectedEvents();
+    console.log("handleStarterPlan called with organizations:", organizations);
+    const selectedByOrg = getAllSelectedEvents(organizations);
     const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
 
     if (totalSelectedEvents === 0) {
@@ -80,7 +89,8 @@ const OnboardingDialog = ({
   };
 
   const proceedWithDownload = async () => {
-    const selectedByOrg = getAllSelectedEvents();
+    console.log("proceedWithDownload called with organizations:", organizations);
+    const selectedByOrg = getAllSelectedEvents(organizations);
     const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
     
     if (totalSelectedEvents === 0) return;
