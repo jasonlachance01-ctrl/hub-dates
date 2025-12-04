@@ -66,8 +66,8 @@ const OrganizationCarousel = ({
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`h-1.5 rounded-full transition-all ${
-                index === currentIndex ? "w-8 bg-primary" : "w-1.5 bg-border"
+              className={`h-1.5 w-6 rounded-full transition-all ${
+                index === currentIndex ? "bg-primary" : "bg-border"
               }`}
               aria-label={`Go to card ${index + 1}`}
             />
