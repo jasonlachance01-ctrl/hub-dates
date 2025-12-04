@@ -103,7 +103,7 @@ const EmailPromptDialog = ({ open, onEmailSubmit, onClose }: EmailPromptDialogPr
             >
               {isSubmitting ? "Confirming..." : "Confirm"}
             </Button>
-            <p className="text-[10px] sm:text-xs text-muted-foreground text-center w-full">
+            <p className="text-[10px] sm:text-xs text-foreground/70 text-center w-full">
               All data stays private and secure
             </p>
           </DialogFooter>
