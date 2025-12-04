@@ -56,23 +56,11 @@ const OrganizationCarousel = ({
     startXRef.current = null;
   };
 
-  // Calculate total selected events across all organizations
-  const totalSelectedEvents = organizations.reduce((total, org) => {
-    return total + org.events.filter(e => e.addedToCalendar).length;
-  }, 0);
-
   return (
     <div className="flex-1 flex flex-col">
       {/* Carousel Header */}
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-lg font-semibold text-foreground">Your Calendars</h2>
-          {totalSelectedEvents > 0 && (
-            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
-              {totalSelectedEvents} event{totalSelectedEvents !== 1 ? 's' : ''} selected
-            </span>
-          )}
-        </div>
+        <h2 className="text-lg font-semibold text-foreground mb-2">Your Calendars</h2>
         <div className="flex items-center gap-2">
           {organizations.map((_, index) => (
             <button
