@@ -195,7 +195,7 @@ const Index = () => {
       setShowOnboarding(false);
       setPendingOrg(null);
       setPendingCallback(null);
-    }} onConnect={handleCalendarConnect} onStarterPlanSelect={handleStarterPlanSelect} pendingOrg={pendingOrg} />
+    }} onConnect={handleCalendarConnect} onStarterPlanSelect={handleStarterPlanSelect} organizations={organizations} />
 
       {/* Footer */}
       <Footer />

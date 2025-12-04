@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
-import { Organization } from "@/types";
+import { Organization, EventType } from "@/types";
 import EmailPromptDialog from "./EmailPromptDialog";
 import FeedbackDialog from "./FeedbackDialog";
 
@@ -14,14 +14,14 @@ interface OnboardingDialogProps {
   onClose: () => void;
   onConnect: () => void;
   onStarterPlanSelect: () => void;
-  pendingOrg: Organization | null;
+  organizations: Organization[];
 }
 
 const OnboardingDialog = ({
   open,
   onClose,
   onStarterPlanSelect,
-  pendingOrg
+  organizations
 }: OnboardingDialogProps) => {
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
@@ -37,21 +37,28 @@ const OnboardingDialog = ({
     }
   }, []);
 
-  // Auto-trigger the download flow when dialog opens (skip pricing dialog)
+  // Auto-trigger the download flow when dialog opens
   useEffect(() => {
-    if (open && pendingOrg) {
+    if (open && organizations.length > 0) {
       handleStarterPlan();
     }
-  }, [open, pendingOrg]);
+  }, [open, organizations]);
+
+  // Get all selected events from all organizations
+  const getAllSelectedEvents = (): { orgName: string; events: EventType[] }[] => {
+    return organizations
+      .map(org => ({
+        orgName: org.name,
+        events: org.events.filter(e => e.addedToCalendar)
+      }))
+      .filter(item => item.events.length > 0);
+  };
 
   const handleStarterPlan = () => {
-    if (!pendingOrg) {
-      toast.error("No organization selected");
-      return;
-    }
+    const selectedByOrg = getAllSelectedEvents();
+    const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
 
-    const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
-    if (selectedEvents.length === 0) {
+    if (totalSelectedEvents === 0) {
       toast.error("Please select at least one event to sync");
       return;
     }
@@ -73,23 +80,48 @@ const OnboardingDialog = ({
   };
 
   const proceedWithDownload = async () => {
-    if (!pendingOrg) return;
+    const selectedByOrg = getAllSelectedEvents();
+    const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
+    
+    if (totalSelectedEvents === 0) return;
 
-    const selectedEvents = pendingOrg.events.filter(e => e.addedToCalendar);
     const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
     const isFirstDownload = syncedOrgs.length === 0;
     const hasGivenFeedback = localStorage.getItem('hasGivenFeedback') === 'true';
 
-    // Generate and download .ics file
+    // Generate and download .ics file with events from ALL organizations
     try {
-      const icsContent = generateICalendarFile(pendingOrg.name, selectedEvents);
-      downloadICalendarFile(pendingOrg.name, icsContent);
+      // Combine all selected events with org name prefix
+      const allEvents: EventType[] = [];
+      const orgNames: string[] = [];
       
-      // Track this organization as synced
-      if (!syncedOrgs.includes(pendingOrg.id)) {
-        syncedOrgs.push(pendingOrg.id);
-        localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
-      }
+      selectedByOrg.forEach(({ orgName, events }) => {
+        orgNames.push(orgName);
+        events.forEach(event => {
+          allEvents.push({
+            ...event,
+            // Prefix event name with organization name
+            name: `${orgName} - ${event.name}`
+          });
+        });
+      });
+
+      // Use combined name for filename
+      const combinedName = orgNames.length === 1 
+        ? orgNames[0] 
+        : `Academic-Calendar-${orgNames.length}-Schools`;
+      
+      // Generate ICS with empty org name since we already prefixed event names
+      const icsContent = generateICalendarFile("", allEvents);
+      downloadICalendarFile(combinedName, icsContent);
+      
+      // Track all organizations as synced
+      organizations.forEach(org => {
+        if (!syncedOrgs.includes(org.id) && org.events.some(e => e.addedToCalendar)) {
+          syncedOrgs.push(org.id);
+        }
+      });
+      localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
 
       // Send welcome email via Loops on first download
       if (isFirstDownload) {
@@ -101,8 +133,8 @@ const OnboardingDialog = ({
                 email: userEmail,
                 eventName: "first_download",
                 eventProperties: {
-                  organizationName: pendingOrg.name,
-                  eventCount: selectedEvents.length
+                  organizationName: orgNames.join(", "),
+                  eventCount: totalSelectedEvents
                 }
               }
             });
@@ -114,7 +146,7 @@ const OnboardingDialog = ({
         }
       }
 
-      toast.success("Calendar ready! Your calendar app should open automatically. Just tap 'Add' or 'Save' to sync the events.");
+      toast.success(`Calendar ready with ${totalSelectedEvents} events from ${orgNames.length} school${orgNames.length > 1 ? 's' : ''}! Your calendar app should open automatically.`);
       onStarterPlanSelect();
       onClose();
       
