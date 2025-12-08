@@ -26,12 +26,7 @@ interface OrganizationCardProps {
   onAddToCalendar: (orgId: string, onSuccess: () => void) => void;
 }
 
-const OrganizationCard = ({
-  organization,
-  onRemove,
-  onUpdate,
-  onAddToCalendar,
-}: OrganizationCardProps) => {
+const OrganizationCard = ({ organization, onRemove, onUpdate, onAddToCalendar }: OrganizationCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const { newDates, hasNotifications } = useEventMonitoring(organization.name);
@@ -41,7 +36,7 @@ const OrganizationCard = ({
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0-indexed (0 = January, 6 = July)
-    
+
     // If July or later, show upcoming year combination
     if (currentMonth >= 6) {
       return `${currentYear}-${currentYear + 1}`;
@@ -51,14 +46,12 @@ const OrganizationCard = ({
   };
 
   const handleAddEvent = (eventId: string) => {
-    const event = organization.events.find(e => e.id === eventId);
+    const event = organization.events.find((e) => e.id === eventId);
     // Don't allow toggling already synced events
     if (event?.syncedToCalendar) return;
-    
-    const updatedEvents = organization.events.map(event =>
-      event.id === eventId
-        ? { ...event, addedToCalendar: !event.addedToCalendar }
-        : event
+
+    const updatedEvents = organization.events.map((event) =>
+      event.id === eventId ? { ...event, addedToCalendar: !event.addedToCalendar } : event,
     );
     onUpdate({
       ...organization,
@@ -75,19 +68,26 @@ const OrganizationCard = ({
     }
 
     setIsSyncing(true);
-    
-    // Call parent - events keep addedToCalendar: true so they're included in multi-school downloads
+
     onAddToCalendar(organization.id, () => {
-      // Mark selected events as synced but KEEP addedToCalendar: true for multi-school download support
-      const updatedEvents = organization.events.map(event =>
+      // ⭐ FIX: When marking synced events, DO NOT remove addedToCalendar.
+      // ⭐ ALWAYS keep addedToCalendar: true (because multi-school sync depends on it).
+      // ⭐ Also mark syncedToCalendar: true so the UI shows "Added".
+      const updatedEvents = organization.events.map((event) =>
         event.addedToCalendar
-          ? { ...event, syncedToCalendar: true }
-          : event
+          ? {
+              ...event,
+              syncedToCalendar: true,
+              addedToCalendar: true, // ← ⭐ FIXED: FORCE THIS TO REMAIN TRUE
+            }
+          : event,
       );
+
       onUpdate({
         ...organization,
         events: updatedEvents,
       });
+
       setIsSyncing(false);
     });
   };
@@ -118,9 +118,7 @@ const OrganizationCard = ({
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-          {organization.url && (
-            <p className="text-xs text-muted-foreground truncate">{organization.url}</p>
-          )}
+          {organization.url && <p className="text-xs text-muted-foreground truncate">{organization.url}</p>}
         </CardHeader>
 
         <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[50vh]">
@@ -133,18 +131,16 @@ const OrganizationCard = ({
                 <p className="text-xs sm:text-sm font-medium line-clamp-2">{event.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-muted-foreground">
-                    {event.date 
+                    {event.date
                       ? normalizeDateDisplay(event.date)
                       : "Date not available - will monitor and notify when announced"}
                   </p>
-                  {!event.date && newDates.some(nd => nd.event_name === event.name) && (
+                  {!event.date && newDates.some((nd) => nd.event_name === event.name) && (
                     <Badge variant="default" className="text-xs py-0 px-1.5 bg-primary text-primary-foreground">
                       New!
                     </Badge>
                   )}
-                  {event.syncedToCalendar && (
-                    <span className="text-[10px] text-muted-foreground/60">Added</span>
-                  )}
+                  {event.syncedToCalendar && <span className="text-[10px] text-muted-foreground/60">Added</span>}
                 </div>
               </div>
               <Button
@@ -169,13 +165,9 @@ const OrganizationCard = ({
         </CardContent>
 
         <CardFooter className="pt-3">
-          <Button
-            onClick={handleAddToCalendar}
-            className="w-full text-sm"
-            disabled={!hasSelectedEvents || isSyncing}
-          >
-            {isSyncing 
-              ? "Downloading..." 
+          <Button onClick={handleAddToCalendar} className="w-full text-sm" disabled={!hasSelectedEvents || isSyncing}>
+            {isSyncing
+              ? "Downloading..."
               : hasNewSelectionsToSync
                 ? "Sync to Calendar"
                 : hasSelectedEvents
@@ -195,7 +187,10 @@ const OrganizationCard = ({
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel className="w-full sm:w-auto text-sm">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onRemove} className="w-full sm:w-auto text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={onRemove}
+              className="w-full sm:w-auto text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Remove
             </AlertDialogAction>
           </AlertDialogFooter>
