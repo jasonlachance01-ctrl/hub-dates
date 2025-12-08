@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import SearchBar from "@/components/SearchBar";
 import OrganizationCarousel from "@/components/OrganizationCarousel";
 import OnboardingDialog from "@/components/OnboardingDialog";
@@ -105,7 +106,7 @@ const Index = () => {
       <header className="flex-shrink-0 px-4 pt-safe pt-4 sm:pt-6 pb-3 sm:pb-4">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
-            <h1 className="text-base sm:text-lg font-bold text-primary leading-tight">AcademicAnnual.com</h1>
+            <Link to="/" className="text-base sm:text-lg font-bold text-primary leading-tight hover:opacity-80 transition-opacity">AcademicAnnual.com</Link>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
                 <div className="px-2 sm:px-3 py-1 bg-secondary/10 border border-border rounded-full">
