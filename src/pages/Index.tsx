@@ -36,12 +36,11 @@ const Index = () => {
         setUserCount(count);
       }
     };
-
     const fetchAverageRating = async () => {
-      const { data, error } = await supabase
-        .from('user_feedback')
-        .select('rating');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('user_feedback').select('rating');
       if (!error && data && data.length > 0) {
         const validRatings = data.filter(d => d.rating !== null);
         setReviewCount(validRatings.length);
@@ -51,7 +50,6 @@ const Index = () => {
         }
       }
     };
-
     fetchUserCount();
     fetchAverageRating();
 
@@ -107,8 +105,8 @@ const Index = () => {
       <header className="flex-shrink-0 px-4 pt-safe pt-4 sm:pt-6 pb-3 sm:pb-4">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
-            <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">
-              Academic<br />Annual
+            <h1 className="text-base sm:text-lg font-bold text-foreground leading-tight">Academic
+Annual.com<br />Annual
             </h1>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
@@ -121,23 +119,12 @@ const Index = () => {
                   Beta
                 </span>
               </div>
-              {averageRating !== null && (
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`w-3 h-3 ${
-                        star <= Math.round(averageRating)
-                          ? "fill-amber-400 text-amber-400"
-                          : "fill-muted text-muted-foreground/40"
-                      }`}
-                    />
-                  ))}
+              {averageRating !== null && <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map(star => <Star key={star} className={`w-3 h-3 ${star <= Math.round(averageRating) ? "fill-amber-400 text-amber-400" : "fill-muted text-muted-foreground/40"}`} />)}
                   <span className="text-[10px] text-foreground/70 ml-1">
                     ({reviewCount})
                   </span>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
         </div>
