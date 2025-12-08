@@ -67,7 +67,7 @@ const OrganizationCard = ({
   };
 
   const handleAddToCalendar = () => {
-    const selectedEvents = organization.events.filter((e) => e.addedToCalendar && !e.syncedToCalendar && e.date);
+    const selectedEvents = organization.events.filter((e) => e.addedToCalendar && e.date);
 
     if (selectedEvents.length === 0) {
       toast.error("Please select at least one event with a date");
@@ -76,12 +76,12 @@ const OrganizationCard = ({
 
     setIsSyncing(true);
     
-    // Call parent with success callback
+    // Call parent - events keep addedToCalendar: true so they're included in multi-school downloads
     onAddToCalendar(organization.id, () => {
-      // Mark selected events as synced
+      // Mark selected events as synced but KEEP addedToCalendar: true for multi-school download support
       const updatedEvents = organization.events.map(event =>
-        event.addedToCalendar && !event.syncedToCalendar
-          ? { ...event, syncedToCalendar: true, addedToCalendar: false }
+        event.addedToCalendar
+          ? { ...event, syncedToCalendar: true }
           : event
       );
       onUpdate({
@@ -92,9 +92,8 @@ const OrganizationCard = ({
     });
   };
 
-  const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar && !e.syncedToCalendar);
-  const allEventsSynced = organization.events.every((e) => e.syncedToCalendar);
-  const hasUnsyncedEvents = organization.events.some((e) => !e.syncedToCalendar);
+  const hasSelectedEvents = organization.events.some((e) => e.addedToCalendar && e.date);
+  const hasNewSelectionsToSync = organization.events.some((e) => e.addedToCalendar && !e.syncedToCalendar && e.date);
 
   return (
     <>
@@ -173,13 +172,15 @@ const OrganizationCard = ({
           <Button
             onClick={handleAddToCalendar}
             className="w-full text-sm"
-            disabled={!hasSelectedEvents || isSyncing || allEventsSynced}
+            disabled={!hasSelectedEvents || isSyncing}
           >
             {isSyncing 
               ? "Downloading..." 
-              : allEventsSynced 
-                ? "All Events Added" 
-                : "Sync to Calendar"}
+              : hasNewSelectionsToSync
+                ? "Sync to Calendar"
+                : hasSelectedEvents
+                  ? "Re-sync to Calendar"
+                  : "Sync to Calendar"}
           </Button>
         </CardFooter>
       </Card>
