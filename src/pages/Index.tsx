@@ -106,7 +106,10 @@ const Index = () => {
       <header className="flex-shrink-0 px-4 pt-safe pt-4 sm:pt-6 pb-3 sm:pb-4">
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between">
-            <Link to="/" className="text-base sm:text-lg font-bold text-primary leading-tight hover:opacity-80 transition-opacity">AcademicAnnual.com</Link>
+            <div className="flex flex-col">
+              <Link to="/" className="text-base sm:text-lg font-bold text-primary leading-tight hover:opacity-80 transition-opacity">AcademicAnnual.com</Link>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground">Designed for Safari browser & iOS Calendar</span>
+            </div>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
                 <div className="px-2 sm:px-3 py-1 bg-secondary/10 border border-border rounded-full">
