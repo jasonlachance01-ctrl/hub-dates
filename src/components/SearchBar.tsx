@@ -152,6 +152,14 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
 
     // Use selectedOrgName if user clicked a suggestion, otherwise use their direct input
     const organizationName = selectedOrgName || searchQuery.trim();
+    const currentSearchQuery = searchQuery; // Capture current value before clearing
+
+    // IMMEDIATELY clear the search input and state to prevent stale data
+    setSearchQuery("");
+    setSelectedOrgName("");
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setShouldFetchSuggestions(true);
 
     // Fetch event dates with comprehensive error handling
     const loadingToast = toast.loading(`Fetching dates for ${organizationName}...`);
@@ -201,16 +209,12 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
       const newOrg: Organization = {
         id: Date.now().toString(),
         name: organizationName,
-        url: searchQuery.includes(".") ? searchQuery : undefined,
+        url: currentSearchQuery.includes(".") ? currentSearchQuery : undefined,
         events,
       };
 
-      // Success - update state and notify user
+      // Success - notify user and add organization
       onAdd(newOrg);
-      setSearchQuery("");
-      setSelectedOrgName("");
-      setSuggestions([]);
-      setShouldFetchSuggestions(true);
       onSearchPerformed?.();
       
       toast.dismiss(loadingToast);
