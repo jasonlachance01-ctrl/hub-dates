@@ -44,17 +44,23 @@ const OnboardingDialog = ({
     }
   }, [open, organizations]);
 
-  // Get all selected events from all organizations
+  // Get all selected events from all organizations (only NEW selections, not already synced)
   const getAllSelectedEvents = (orgs: Organization[]): { orgName: string; events: EventType[] }[] => {
     console.log("getAllSelectedEvents called with organizations:", orgs.map(o => ({
       name: o.name,
-      events: o.events.map(e => ({ name: e.name, addedToCalendar: e.addedToCalendar, date: e.date }))
+      events: o.events.map(e => ({ 
+        name: e.name, 
+        addedToCalendar: e.addedToCalendar, 
+        syncedToCalendar: e.syncedToCalendar,
+        date: e.date 
+      }))
     })));
     
     const result = orgs
       .map(org => ({
         orgName: org.name,
-        events: org.events.filter(e => e.addedToCalendar && e.date) // Also filter for events with dates
+        // Only include events that are selected, have a date, AND haven't been synced yet
+        events: org.events.filter(e => e.addedToCalendar && e.date && !e.syncedToCalendar)
       }))
       .filter(item => item.events.length > 0);
     
