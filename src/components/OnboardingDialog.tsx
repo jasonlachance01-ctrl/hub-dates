@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { generateICalendarFile, downloadICalendarFile } from "@/lib/calendarUtils";
-import { debugGroup, isDebugEnabled } from "@/lib/debug";
 import { Organization, EventType } from "@/types";
 import EmailPromptDialog from "./EmailPromptDialog";
 import FeedbackDialog from "./FeedbackDialog";
+
 // Admin mode helper for testing - checks localStorage flag
 const isAdminMode = () => localStorage.getItem('adminMode') === 'true';
 
@@ -98,25 +98,6 @@ const OnboardingDialog = ({
     console.log("proceedWithDownload called with organizations:", organizations);
     const selectedByOrg = getAllSelectedEvents(organizations);
     const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
-
-    if (isDebugEnabled("debugIcs")) {
-      debugGroup("[ICS] proceedWithDownload selectedByOrg", () => {
-        console.log({ totalSelectedEvents });
-        selectedByOrg.forEach(({ orgName, events }) => {
-          console.groupCollapsed(`Org: ${orgName} (${events.length})`);
-          console.table(
-            events.map((e) => ({
-              id: e.id,
-              name: e.name,
-              date: e.date,
-              addedToCalendar: e.addedToCalendar,
-              syncedToCalendar: e.syncedToCalendar,
-            }))
-          );
-          console.groupEnd();
-        });
-      });
-    }
     
     if (totalSelectedEvents === 0) return;
 
@@ -146,25 +127,9 @@ const OnboardingDialog = ({
         ? orgNames[0] 
         : `Academic-Calendar-${orgNames.length}-Schools`;
       
-       // Generate ICS with empty org name since we already prefixed event names
-       const icsContent = generateICalendarFile("", allEvents);
-
-       if (isDebugEnabled("debugIcs")) {
-         debugGroup("[ICS] final events written to file", () => {
-           console.log({ combinedName, allEventsCount: allEvents.length });
-           console.table(
-             allEvents.map((e) => ({
-               id: e.id,
-               name: e.name,
-               date: e.date,
-               addedToCalendar: e.addedToCalendar,
-               syncedToCalendar: e.syncedToCalendar,
-             }))
-           );
-         });
-       }
-
-       downloadICalendarFile(combinedName, icsContent);
+      // Generate ICS with empty org name since we already prefixed event names
+      const icsContent = generateICalendarFile("", allEvents);
+      downloadICalendarFile(combinedName, icsContent);
       
       // Track all organizations as synced
       organizations.forEach(org => {

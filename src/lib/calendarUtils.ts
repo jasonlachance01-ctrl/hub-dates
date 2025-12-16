@@ -1,6 +1,6 @@
 import { EventType } from "@/types";
 import { parse } from "date-fns";
-import { debugGroup, isDebugEnabled } from "@/lib/debug";
+
 /**
  * Escapes special characters in iCalendar text fields per RFC 5545
  */
@@ -30,30 +30,14 @@ export const generateICalendarFile = (
   organizationName: string,
   events: EventType[]
 ): string => {
-  const debugIcs = isDebugEnabled("debugIcs");
-
-  if (debugIcs) {
-    debugGroup("[ICS] generateICalendarFile inputs", () => {
-      console.log({ organizationName, eventCount: events.length });
-      console.table(
-        events.map((e) => ({
-          id: e.id,
-          name: e.name,
-          date: e.date,
-          addedToCalendar: e.addedToCalendar,
-          syncedToCalendar: e.syncedToCalendar,
-        }))
-      );
-    });
-  }
-
   const lines: string[] = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Academic Calendar//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH",
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Academic Calendar//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
   ];
+
   events.forEach(event => {
     if (!event.date) return; // Skip events without dates
 
@@ -121,17 +105,9 @@ export const generateICalendarFile = (
     );
   });
 
-  lines.push("END:VCALENDAR");
-
-  const content = lines.join("\r\n");
-
-  if (isDebugEnabled("debugIcs")) {
-    debugGroup("[ICS] generateICalendarFile output", () => {
-      console.log({ length: content.length, preview: content.slice(0, 240) + "..." });
-    });
-  }
-
-  return content;
+  lines.push('END:VCALENDAR');
+  
+  return lines.join('\r\n');
 };
 
 /**
@@ -143,33 +119,19 @@ export const downloadICalendarFile = (
   organizationName: string,
   icsContent: string
 ): void => {
-  const debugIcs = isDebugEnabled("debugIcs");
-
-  const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
   const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  // If you're debugging, use a unique filename to eliminate any browser "same-name" confusion.
-  const baseName = sanitizeFilename(organizationName) || "academic";
-  const filename = debugIcs
-    ? `${baseName}-calendar-${Date.now()}.ics`
-    : `${baseName}-calendar.ics`;
-
-  if (debugIcs) {
-    debugGroup("[ICS] downloadICalendarFile", () => {
-      console.log({ filename, blobSize: blob.size, objectUrl: url });
-    });
-  }
-
+  const link = document.createElement('a');
+  
   link.href = url;
-  link.download = filename;
-
+  link.download = `${sanitizeFilename(organizationName)}-calendar.ics`;
+  
   // Append to body, click, then cleanup
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-
-  // Cleanup: revoke the object URL after a short delay
+  
+  // Delay cleanup to ensure download completes and calendar app can open
   setTimeout(() => {
     window.URL.revokeObjectURL(url);
   }, 1000);
