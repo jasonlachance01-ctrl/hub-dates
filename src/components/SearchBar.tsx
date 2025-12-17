@@ -353,7 +353,11 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
             </div>
           )}
         </div>
-        <Button onClick={handleSearch} size="lg" className="px-3 sm:px-4 md:px-6 text-xs sm:text-sm h-10 sm:h-11 whitespace-nowrap">
+        <Button 
+          onClick={handleSearch} 
+          size="lg" 
+          className="px-3 sm:px-4 md:px-6 text-xs sm:text-sm h-10 sm:h-11 whitespace-nowrap transition-all duration-150 active:scale-95 active:brightness-90"
+        >
           Add
         </Button>
       </div>
