@@ -60,7 +60,7 @@ const OrganizationCarousel = ({
     <div className="flex-1 flex flex-col">
       {/* Carousel Header */}
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground mb-2">Your Calendars</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-2">Your School Feed</h2>
         <div className="flex items-center gap-2">
           {organizations.map((_, index) => (
             <button
