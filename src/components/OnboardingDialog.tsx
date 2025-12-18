@@ -92,25 +92,41 @@ const OnboardingDialog = ({ open, onClose, onStarterPlanSelect, organizations }:
   };
 
   const proceedWithDownload = async () => {
-    console.log("proceedWithDownload called with organizations:", organizations);
+    // DEBUG: Log the raw organizations state
+    console.log("=== DEBUG: proceedWithDownload START ===");
+    console.log("DEBUG: Raw organizations from props:", JSON.stringify(organizations.map(o => ({
+      id: o.id,
+      name: o.name,
+      eventCount: o.events.length,
+      selectedEvents: o.events.filter(e => e.addedToCalendar).map(e => ({ id: e.id, name: e.name, addedToCalendar: e.addedToCalendar }))
+    })), null, 2));
+    debugger; // BREAKPOINT 1: Check organizations prop
+    
     const selectedByOrg = getAllSelectedEvents(organizations);
+    console.log("DEBUG: selectedByOrg after getAllSelectedEvents:", JSON.stringify(selectedByOrg, null, 2));
+    debugger; // BREAKPOINT 2: Check filtered events
+    
     const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
+    console.log("DEBUG: totalSelectedEvents:", totalSelectedEvents);
 
     if (totalSelectedEvents === 0) return;
 
     const syncedOrgs = JSON.parse(localStorage.getItem("syncedOrganizations") || "[]");
-    const isFirstDownload = syncedOrgs.length === 0;
+    console.log("DEBUG: syncedOrgs from localStorage:", syncedOrgs);
+    
+    const isFirstDownload = !localStorage.getItem("hasDownloaded");
     const hasGivenFeedback = localStorage.getItem("hasGivenFeedback") === "true";
+    console.log("DEBUG: isFirstDownload:", isFirstDownload, "hasGivenFeedback:", hasGivenFeedback);
+    debugger; // BREAKPOINT 3: Check synced orgs and download state
 
-    // Generate and download .ics file with events from ALL organizations
     try {
-      // Combine all selected events with org name prefix
       const allEvents: EventType[] = [];
       const orgNames: string[] = [];
 
       selectedByOrg.forEach(({ orgName, events }) => {
         orgNames.push(orgName);
         events.forEach((event) => {
+          console.log("DEBUG: Adding event to allEvents:", { orgName, eventId: event.id, eventName: event.name });
           allEvents.push({
             ...event,
             // Prefix event name with organization name
@@ -118,6 +134,9 @@ const OnboardingDialog = ({ open, onClose, onStarterPlanSelect, organizations }:
           });
         });
       });
+      
+      console.log("DEBUG: Final allEvents array:", JSON.stringify(allEvents.map(e => ({ id: e.id, name: e.name })), null, 2));
+      debugger; // BREAKPOINT 4: Check final events before ICS generation
 
       // Use combined name for filename
       const combinedName = orgNames.length === 1 ? orgNames[0] : `Academic-Calendar-${orgNames.length}-Schools`;
@@ -125,6 +144,9 @@ const OnboardingDialog = ({ open, onClose, onStarterPlanSelect, organizations }:
       // Generate ICS with empty org name since we already prefixed event names
       const icsContent = generateICalendarFile("", allEvents);
       downloadICalendarFile(combinedName, icsContent);
+
+      // Mark as downloaded
+      localStorage.setItem("hasDownloaded", "true");
 
       // Track all organizations as synced
       organizations.forEach((org) => {
