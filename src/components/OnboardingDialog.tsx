@@ -7,7 +7,7 @@ import EmailPromptDialog from "./EmailPromptDialog";
 import FeedbackDialog from "./FeedbackDialog";
 
 // Admin mode helper for testing - checks localStorage flag
-const isAdminMode = () => localStorage.getItem('adminMode') === 'true';
+const isAdminMode = () => localStorage.getItem("adminMode") === "true";
 
 interface OnboardingDialogProps {
   open: boolean;
@@ -17,23 +17,18 @@ interface OnboardingDialogProps {
   organizations: Organization[];
 }
 
-const OnboardingDialog = ({
-  open,
-  onClose,
-  onStarterPlanSelect,
-  organizations
-}: OnboardingDialogProps) => {
+const OnboardingDialog = ({ open, onClose, onStarterPlanSelect, organizations }: OnboardingDialogProps) => {
   const [showEmailPrompt, setShowEmailPrompt] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   // Check for admin mode URL parameter on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('admin') === 'true') {
-      localStorage.setItem('adminMode', 'true');
+    if (params.get("admin") === "true") {
+      localStorage.setItem("adminMode", "true");
       toast.success("Admin mode enabled - unlimited downloads for testing");
       // Clean up URL without reloading
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
@@ -46,24 +41,26 @@ const OnboardingDialog = ({
 
   // Get all selected events from all organizations (only NEW selections, not already synced)
   const getAllSelectedEvents = (orgs: Organization[]): { orgName: string; events: EventType[] }[] => {
-    console.log("getAllSelectedEvents called with organizations:", orgs.map(o => ({
-      name: o.name,
-      events: o.events.map(e => ({ 
-        name: e.name, 
-        addedToCalendar: e.addedToCalendar, 
-        syncedToCalendar: e.syncedToCalendar,
-        date: e.date 
-      }))
-    })));
-    
+    console.log(
+      "getAllSelectedEvents called with organizations:",
+      orgs.map((o) => ({
+        name: o.name,
+        events: o.events.map((e) => ({
+          name: e.name,
+          addedToCalendar: e.addedToCalendar,
+          date: e.date,
+        })),
+      })),
+    );
+
     const result = orgs
-      .map(org => ({
+      .map((org) => ({
         orgName: org.name,
         // Only include events that are selected, have a date, AND haven't been synced yet
-        events: org.events.filter(e => e.addedToCalendar && e.date && !e.syncedToCalendar)
+        events: org.events.filter((e) => e.addedToCalendar && e.date),
       }))
-      .filter(item => item.events.length > 0);
-    
+      .filter((item) => item.events.length > 0);
+
     console.log("getAllSelectedEvents result:", result);
     return result;
   };
@@ -85,7 +82,7 @@ const OnboardingDialog = ({
     }
 
     // Check if user hasn't provided email yet
-    const userEmail = localStorage.getItem('userEmail');
+    const userEmail = localStorage.getItem("userEmail");
     if (!userEmail) {
       setShowEmailPrompt(true);
       return;
@@ -98,50 +95,48 @@ const OnboardingDialog = ({
     console.log("proceedWithDownload called with organizations:", organizations);
     const selectedByOrg = getAllSelectedEvents(organizations);
     const totalSelectedEvents = selectedByOrg.reduce((sum, item) => sum + item.events.length, 0);
-    
+
     if (totalSelectedEvents === 0) return;
 
-    const syncedOrgs = JSON.parse(localStorage.getItem('syncedOrganizations') || '[]');
+    const syncedOrgs = JSON.parse(localStorage.getItem("syncedOrganizations") || "[]");
     const isFirstDownload = syncedOrgs.length === 0;
-    const hasGivenFeedback = localStorage.getItem('hasGivenFeedback') === 'true';
+    const hasGivenFeedback = localStorage.getItem("hasGivenFeedback") === "true";
 
     // Generate and download .ics file with events from ALL organizations
     try {
       // Combine all selected events with org name prefix
       const allEvents: EventType[] = [];
       const orgNames: string[] = [];
-      
+
       selectedByOrg.forEach(({ orgName, events }) => {
         orgNames.push(orgName);
-        events.forEach(event => {
+        events.forEach((event) => {
           allEvents.push({
             ...event,
             // Prefix event name with organization name
-            name: `${orgName} - ${event.name}`
+            name: `${orgName} - ${event.name}`,
           });
         });
       });
 
       // Use combined name for filename
-      const combinedName = orgNames.length === 1 
-        ? orgNames[0] 
-        : `Academic-Calendar-${orgNames.length}-Schools`;
-      
+      const combinedName = orgNames.length === 1 ? orgNames[0] : `Academic-Calendar-${orgNames.length}-Schools`;
+
       // Generate ICS with empty org name since we already prefixed event names
       const icsContent = generateICalendarFile("", allEvents);
       downloadICalendarFile(combinedName, icsContent);
-      
+
       // Track all organizations as synced
-      organizations.forEach(org => {
-        if (!syncedOrgs.includes(org.id) && org.events.some(e => e.addedToCalendar)) {
+      organizations.forEach((org) => {
+        if (!syncedOrgs.includes(org.id) && org.events.some((e) => e.addedToCalendar)) {
           syncedOrgs.push(org.id);
         }
       });
-      localStorage.setItem('syncedOrganizations', JSON.stringify(syncedOrgs));
+      localStorage.setItem("syncedOrganizations", JSON.stringify(syncedOrgs));
 
       // Send welcome email via Loops on first download
       if (isFirstDownload) {
-        const userEmail = localStorage.getItem('userEmail');
+        const userEmail = localStorage.getItem("userEmail");
         if (userEmail) {
           try {
             await supabase.functions.invoke("send-loops-event", {
@@ -150,9 +145,9 @@ const OnboardingDialog = ({
                 eventName: "first_download",
                 eventProperties: {
                   organizationName: orgNames.join(", "),
-                  eventCount: totalSelectedEvents
-                }
-              }
+                  eventCount: totalSelectedEvents,
+                },
+              },
             });
             console.log("Welcome email event sent to Loops");
           } catch (error) {
@@ -162,10 +157,12 @@ const OnboardingDialog = ({
         }
       }
 
-      toast.success(`Calendar ready with ${totalSelectedEvents} events from ${orgNames.length} school${orgNames.length > 1 ? 's' : ''}! Your calendar app should open automatically.`);
+      toast.success(
+        `Calendar ready with ${totalSelectedEvents} events from ${orgNames.length} school${orgNames.length > 1 ? "s" : ""}! Your calendar app should open automatically.`,
+      );
       onStarterPlanSelect();
       onClose();
-      
+
       // Show feedback dialog after first download if user hasn't given feedback
       if (isFirstDownload && !hasGivenFeedback) {
         setTimeout(() => {
@@ -185,7 +182,7 @@ const OnboardingDialog = ({
 
   const handleFeedbackClose = () => {
     setShowFeedbackDialog(false);
-    localStorage.setItem('hasGivenFeedback', 'true');
+    localStorage.setItem("hasGivenFeedback", "true");
   };
 
   return (
@@ -195,11 +192,8 @@ const OnboardingDialog = ({
         onEmailSubmit={handleEmailSubmit}
         onClose={() => setShowEmailPrompt(false)}
       />
-      
-      <FeedbackDialog
-        open={showFeedbackDialog}
-        onClose={handleFeedbackClose}
-      />
+
+      <FeedbackDialog open={showFeedbackDialog} onClose={handleFeedbackClose} />
     </>
   );
 };
