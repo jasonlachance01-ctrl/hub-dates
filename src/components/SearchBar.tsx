@@ -97,8 +97,13 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
           setTimeout(() => reject(new Error('Suggestion fetch timeout')), 10000)
         );
 
+        // Combine search query with city/state for more accurate results
+        const fullQuery = [searchQuery.trim(), city.trim(), state.trim()]
+          .filter(Boolean)
+          .join(' ');
+        
         const fetchPromise = supabase.functions.invoke("search-suggestions", {
-          body: { query: searchQuery },
+          body: { query: fullQuery },
         });
 
         const { data, error } = await Promise.race([
