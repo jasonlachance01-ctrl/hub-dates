@@ -139,7 +139,7 @@ const SearchBar = ({ onAdd, onSearchPerformed, city = "", state = "" }: SearchBa
 
     const debounceTimer = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, shouldFetchSuggestions]);
+  }, [searchQuery, shouldFetchSuggestions, city, state]);
 
   const handleSearch = async () => {
     // Input validation
