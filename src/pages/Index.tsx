@@ -135,7 +135,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="flex-shrink-0 px-4 py-4 sm:py-6">
         <div className="max-w-md mx-auto text-center space-y-4 sm:space-y-6">
-          <div>
+          <div className="py-6 sm:py-8">
             <h2 className="font-bold leading-tight text-neutral-700 text-4xl sm:text-5xl md:text-6xl font-serif">Sync to Any School Calendar</h2>
             <p className="font-bold leading-tight italic text-primary text-4xl sm:text-5xl md:text-6xl font-serif">in one Place!</p>
           </div>
