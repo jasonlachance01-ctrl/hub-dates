@@ -136,7 +136,8 @@ const Index = () => {
       <section className="flex-shrink-0 px-4 py-4 sm:py-6">
         <div className="max-w-md mx-auto text-center space-y-4 sm:space-y-6">
           <div>
-            <h2 className="font-bold leading-tight text-neutral-700 text-2xl sm:text-3xl md:text-4xl font-serif">Sync to Any School Calendar <span className="italic text-primary">in one Place!</span></h2>
+            <h2 className="font-bold leading-tight text-neutral-700 text-3xl sm:text-4xl md:text-5xl font-serif">Sync to Any School Calendar</h2>
+            <p className="font-bold leading-tight italic text-primary text-3xl sm:text-4xl md:text-5xl font-serif">in one Place!</p>
           </div>
           <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their academic calendar to import into your own!</p>
           <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mt-2">
