@@ -139,8 +139,8 @@ const Index = () => {
             <h2 className="font-bold leading-tight text-neutral-700 text-5xl sm:text-6xl md:text-7xl font-serif">Sync to Any School Calendar</h2>
             <p className="font-bold leading-tight italic text-primary text-5xl sm:text-6xl md:text-7xl font-serif">in one Place!</p>
           </div>
-          <p className="text-sm sm:text-base text-foreground/80 leading-relaxed">Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their academic calendar to import into your own!</p>
-          <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mt-2">
+          <p className="text-base sm:text-lg text-foreground/80 leading-relaxed">Enter the name or URL of any Elementary, Middle, High-School, or College to add to your feed then select the important dates from their academic calendar to import into your own!</p>
+          <p className="text-base sm:text-lg text-foreground/80 leading-relaxed mt-2">
             Include City and State for accurate results.
           </p>
           <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4 max-w-sm mx-auto">
