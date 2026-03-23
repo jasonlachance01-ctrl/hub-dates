@@ -108,7 +108,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
               <Link to="/" className="text-base sm:text-lg font-bold text-primary leading-tight hover:opacity-80 transition-opacity">AcademicAnnual.com</Link>
-              <span className="text-[9px] sm:text-[10px] text-muted-foreground">Designed for Safari browser & iOS Calendar</span>
+              <span className="text-[9px] sm:text-[10px] text-muted-foreground">Works with Apple, Google & Outlook Calendar</span>
             </div>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-2">
