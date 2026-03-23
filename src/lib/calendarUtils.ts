@@ -1,6 +1,81 @@
 import { EventType } from "@/types";
 import { parse } from "date-fns";
 
+/* ─── Types used by the platform picker ─── */
+interface EventGroup {
+  orgName: string;
+  events: EventType[];
+}
+
+/* ─── Helper: parse an event date string → date parts ─── */
+const parseDateParts = (
+  dateStr: string | undefined
+): { start: string; end: string; isoStart: string; isoEnd: string } | null => {
+  if (!dateStr) return null;
+  const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/i, "$1");
+  let d: Date;
+  try {
+    d = parse(cleaned, "MMMM d, yyyy", new Date());
+    if (isNaN(d.getTime())) d = parse(dateStr, "M/d/yyyy", new Date());
+    if (isNaN(d.getTime())) return null;
+  } catch {
+    return null;
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const next = new Date(y, d.getMonth(), d.getDate() + 1);
+  const ny = next.getFullYear();
+  const nm = String(next.getMonth() + 1).padStart(2, "0");
+  const nd = String(next.getDate()).padStart(2, "0");
+  return {
+    start: `${y}${m}${day}`,
+    end: `${ny}${nm}${nd}`,
+    isoStart: `${y}-${m}-${day}`,
+    isoEnd: `${ny}-${nm}-${nd}`,
+  };
+};
+
+export const generateGoogleCalendarUrls = (groups: EventGroup[]): string[] => {
+  const urls: string[] = [];
+  groups.forEach(({ orgName, events }) => {
+    events.forEach((ev) => {
+      const parts = parseDateParts(ev.date);
+      if (!parts) return;
+      const title = orgName ? `${orgName} - ${ev.name}` : ev.name;
+      const params = new URLSearchParams({
+        action: "TEMPLATE",
+        text: title,
+        dates: `${parts.start}/${parts.end}`,
+        details: `Added via AcademicAnnual.com`,
+      });
+      urls.push(`https://calendar.google.com/calendar/render?${params.toString()}`);
+    });
+  });
+  return urls;
+};
+
+export const generateOutlookCalendarUrls = (groups: EventGroup[]): string[] => {
+  const urls: string[] = [];
+  groups.forEach(({ orgName, events }) => {
+    events.forEach((ev) => {
+      const parts = parseDateParts(ev.date);
+      if (!parts) return;
+      const title = orgName ? `${orgName} - ${ev.name}` : ev.name;
+      const params = new URLSearchParams({
+        rru: "addevent",
+        startdt: parts.isoStart,
+        enddt: parts.isoEnd,
+        subject: title,
+        allday: "true",
+        body: "Added via AcademicAnnual.com",
+      });
+      urls.push(`https://outlook.live.com/calendar/0/action/compose?${params.toString()}`);
+    });
+  });
+  return urls;
+};
+
 /**
  * Escapes special characters in iCalendar text fields per RFC 5545
  */
