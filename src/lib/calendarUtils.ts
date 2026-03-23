@@ -7,20 +7,79 @@ interface EventGroup {
   events: EventType[];
 }
 
+/* ─── Helper: simple string hash for unique IDs ─── */
+const simpleHash = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
 /* ─── Helper: parse an event date string → date parts ─── */
 const parseDateParts = (
   dateStr: string | undefined
 ): { start: string; end: string; isoStart: string; isoEnd: string } | null => {
   if (!dateStr) return null;
-  const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/i, "$1");
-  let d: Date;
-  try {
-    d = parse(cleaned, "MMMM d, yyyy", new Date());
-    if (isNaN(d.getTime())) d = parse(dateStr, "M/d/yyyy", new Date());
-    if (isNaN(d.getTime())) return null;
-  } catch {
-    return null;
+
+  const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/gi, "$1");
+
+  let d: Date | null = null;
+
+  const formats = [
+    "MMMM d, yyyy",
+    "MMM d, yyyy",
+    "MMMM d yyyy",
+    "MMM d yyyy",
+    "M/d/yyyy",
+    "MM/dd/yyyy",
+    "yyyy-MM-dd",
+  ];
+
+  for (const fmt of formats) {
+    try {
+      const parsed = parse(cleaned, fmt, new Date());
+      if (!isNaN(parsed.getTime())) {
+        d = parsed;
+        break;
+      }
+    } catch {
+      // try next format
+    }
   }
+
+  // Handle date ranges like "October 14 - 18, 2025"
+  if (!d) {
+    const rangeMatch = cleaned.match(
+      /^(\w+)\s+(\d{1,2})\s*[-–]\s*\d{1,2},?\s+(\d{4})/
+    );
+    if (rangeMatch) {
+      const rangeStr = `${rangeMatch[1]} ${rangeMatch[2]}, ${rangeMatch[3]}`;
+      try {
+        const parsed = parse(rangeStr, "MMMM d, yyyy", new Date());
+        if (!isNaN(parsed.getTime())) d = parsed;
+      } catch { /* ignore */ }
+      if (!d) {
+        try {
+          const parsed = parse(rangeStr, "MMM d, yyyy", new Date());
+          if (!isNaN(parsed.getTime())) d = parsed;
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  // Last resort: native Date constructor
+  if (!d) {
+    try {
+      const native = new Date(cleaned);
+      if (!isNaN(native.getTime())) d = native;
+    } catch { /* ignore */ }
+  }
+
+  if (!d) return null;
+
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -76,31 +135,22 @@ export const generateOutlookCalendarUrls = (groups: EventGroup[]): string[] => {
   return urls;
 };
 
-/**
- * Escapes special characters in iCalendar text fields per RFC 5545
- */
 const escapeICalText = (text: string): string => {
   return text
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/;/g, '\\;')    // Escape semicolons
-    .replace(/,/g, '\\,')    // Escape commas
-    .replace(/\n/g, '\\n');  // Escape newlines
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
 };
 
-/**
- * Sanitizes filename by removing invalid characters
- */
 const sanitizeFilename = (filename: string): string => {
   return filename
-    .replace(/[/\\:*?"<>|]/g, '-')  // Replace invalid filename chars
-    .replace(/\s+/g, '-')            // Replace spaces
-    .replace(/-+/g, '-')             // Remove duplicate dashes
-    .replace(/^-|-$/g, '');          // Trim dashes from start/end
+    .replace(/[/\\:*?"<>|]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 };
 
-/**
- * Generates an iCalendar (.ics) file content for the given events
- */
 export const generateICalendarFile = (
   organizationName: string,
   events: EventType[]
@@ -113,66 +163,40 @@ export const generateICalendarFile = (
     'METHOD:PUBLISH',
   ];
 
-  events.forEach(event => {
-    if (!event.date) return; // Skip events without dates
+  let skippedCount = 0;
 
-    // Parse date string safely to avoid timezone issues
-    // Dates are stored as "August 25, 2025" or "August 25th, 2025"
-    const cleanedDate = event.date.replace(/(\d+)(st|nd|rd|th)/i, "$1");
-    let eventDate: Date;
-    
-    try {
-      // Try parsing as spelled-out date first (e.g., "August 25, 2025")
-      eventDate = parse(cleanedDate, "MMMM d, yyyy", new Date());
-      
-      // Validate parsed date
-      if (isNaN(eventDate.getTime())) {
-        // Fallback: try M/d/yyyy format (e.g., "8/25/2025")
-        eventDate = parse(event.date, "M/d/yyyy", new Date());
-      }
-      
-      if (isNaN(eventDate.getTime())) {
-        console.warn(`Skipping event with invalid date: ${event.name} - ${event.date}`);
-        return;
-      }
-    } catch (error) {
-      console.warn(`Failed to parse date for event: ${event.name} - ${event.date}`, error);
+  events.forEach(event => {
+    if (!event.date) {
+      skippedCount++;
       return;
     }
-    
-    const eventName = organizationName ? `${organizationName} ${event.name}` : event.name;
-    
-    // Extract date components directly to avoid timezone issues
-    const year = eventDate.getFullYear();
-    const month = String(eventDate.getMonth() + 1).padStart(2, '0');
-    const day = String(eventDate.getDate()).padStart(2, '0');
-    const dateStr = `${year}${month}${day}`;
-    
-    // For all-day events, DTEND must be the day after (non-inclusive)
-    const endDate = new Date(year, eventDate.getMonth(), eventDate.getDate() + 1);
-    const endYear = endDate.getFullYear();
-    const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
-    const endDay = String(endDate.getDate()).padStart(2, '0');
-    const endDateStr = `${endYear}${endMonth}${endDay}`;
-    
-    // Generate a unique ID for the event (sanitized)
-    const sanitizedOrgName = sanitizeFilename(organizationName);
-    const uid = `${event.id}-${sanitizedOrgName}@academiccalendar.app`;
-    
-    // Escape special characters per RFC 5545
+
+    const parts = parseDateParts(event.date);
+    if (!parts) {
+      console.warn(`[AcademicAnnual] Skipping event with unparseable date: "${event.name}" — "${event.date}"`);
+      skippedCount++;
+      return;
+    }
+
+    const eventName = organizationName
+      ? `${organizationName} ${event.name}`
+      : event.name;
+
+    // UID must be unique across all schools — use hash of full name + date
+    const uid = `aa-${simpleHash(eventName + parts.start)}-${event.id}@academiccalendar.app`;
+
     const escapedSummary = escapeICalText(eventName);
     const escapedDescription = escapeICalText(eventName);
-    
-    // DTSTAMP is REQUIRED by RFC 5545 - timestamp when event was created
+
     const now = new Date();
     const dtstamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    
+
     lines.push(
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTAMP:${dtstamp}`,
-      `DTSTART;VALUE=DATE:${dateStr}`,
-      `DTEND;VALUE=DATE:${endDateStr}`,
+      `DTSTART;VALUE=DATE:${parts.start}`,
+      `DTEND;VALUE=DATE:${parts.end}`,
       `SUMMARY:${escapedSummary}`,
       `DESCRIPTION:${escapedDescription}`,
       `STATUS:CONFIRMED`,
@@ -181,33 +205,45 @@ export const generateICalendarFile = (
   });
 
   lines.push('END:VCALENDAR');
-  
+
+  if (skippedCount > 0) {
+    console.warn(`[AcademicAnnual] ${skippedCount} event(s) skipped due to missing or unparseable dates.`);
+  }
+
   return lines.join('\r\n');
 };
 
-/**
- * Downloads .ics file and triggers native calendar app to open
- * On iOS/mobile: Automatically opens in default calendar app
- * User just needs to tap "Add" or "Save" to sync events
- */
-export const downloadICalendarFile = (
+export const downloadICalendarFile = async (
   organizationName: string,
   icsContent: string
-): void => {
+): Promise<void> => {
+  const filename = `${sanitizeFilename(organizationName)}-calendar.ics`;
   const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+
+  // iOS non-Safari: use Web Share API so user can tap "Calendar" in share sheet
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS && !isSafari) {
+    try {
+      const file = new File([blob], filename, { type: 'text/calendar' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: organizationName || 'School Calendar' });
+        return;
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === 'AbortError') return;
+      console.warn('Web Share API failed, falling back to download:', err);
+    }
+  }
+
+  // Safari & desktop: traditional blob download
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
-  
   link.href = url;
-  link.download = `${sanitizeFilename(organizationName)}-calendar.ics`;
-  
-  // Append to body, click, then cleanup
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
-  // Delay cleanup to ensure download completes and calendar app can open
-  setTimeout(() => {
-    window.URL.revokeObjectURL(url);
-  }, 1000);
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 };

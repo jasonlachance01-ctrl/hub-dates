@@ -61,16 +61,16 @@ const CalendarPlatformPicker = ({
       ? orgNames[0]
       : `Academic-Calendar-${orgNames.length}-Schools`;
 
-  const handleApple = () => {
+  const handleApple = async () => {
     const ics = generateICalendarFile("", flatEvents);
-    downloadICalendarFile(combinedName, ics);
+    await downloadICalendarFile(combinedName, ics);
     toast.success(
-      `Calendar file downloaded with ${totalEvents} event${totalEvents !== 1 ? "s" : ""}! Your calendar app should open automatically.`
+      `Calendar file ready with ${totalEvents} event${totalEvents !== 1 ? "s" : ""}! Your calendar app should open automatically.`
     );
     finish();
   };
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     if (totalEvents <= 3) {
       const urls = generateGoogleCalendarUrls(selectedEvents);
       urls.forEach((url, i) => {
@@ -79,12 +79,9 @@ const CalendarPlatformPicker = ({
       toast.success(`Opening ${totalEvents} event${totalEvents !== 1 ? "s" : ""} in Google Calendar!`);
     } else {
       const ics = generateICalendarFile("", flatEvents);
-      downloadICalendarFile(combinedName, ics);
+      await downloadICalendarFile(combinedName, ics);
       setTimeout(() => {
-        window.open(
-          "https://calendar.google.com/calendar/u/0/r/settings/export",
-          "_blank"
-        );
+        window.open("https://calendar.google.com/calendar/u/0/r/settings/export", "_blank");
       }, 600);
       toast.success(
         "Calendar file downloaded! On the Google Calendar page that just opened, click \"Select file from your computer\" to import it.",
@@ -94,7 +91,7 @@ const CalendarPlatformPicker = ({
     finish();
   };
 
-  const handleOutlook = () => {
+  const handleOutlook = async () => {
     if (totalEvents <= 3) {
       const urls = generateOutlookCalendarUrls(selectedEvents);
       urls.forEach((url, i) => {
@@ -103,12 +100,9 @@ const CalendarPlatformPicker = ({
       toast.success(`Opening ${totalEvents} event${totalEvents !== 1 ? "s" : ""} in Outlook!`);
     } else {
       const ics = generateICalendarFile("", flatEvents);
-      downloadICalendarFile(combinedName, ics);
+      await downloadICalendarFile(combinedName, ics);
       setTimeout(() => {
-        window.open(
-          "https://outlook.live.com/calendar/0/import",
-          "_blank"
-        );
+        window.open("https://outlook.live.com/calendar/0/import", "_blank");
       }, 600);
       toast.success(
         "Calendar file downloaded! On the Outlook page that just opened, browse for the downloaded file to import it.",
